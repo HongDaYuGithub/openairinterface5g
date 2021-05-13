@@ -2725,6 +2725,36 @@ nr_rrc_ue_process_ueCapabilityEnquiry(
   }
 }
 
+//-----------------------------------------------------------------------------
+void rrc_ue_generate_RRCReestablishmentRequest( const protocol_ctxt_t *const ctxt_pP, const uint8_t gNB_index ) 
+{
+  NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size =
+    do_RRCReestablishmentRequest(
+      ctxt_pP->module_id,
+      (uint8_t *)NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload, 0x1234);
+  LOG_I(NR_RRC,"[UE %d] : Frame %d, Logical Channel UL-CCCH (SRB0), Generating RRCReestablishmentRequest (bytes %d, gNB %d)\n",
+        ctxt_pP->module_id, ctxt_pP->frame, NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size, gNB_index);
+
+  for (int i=0; i<NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size; i++) {
+    LOG_T(NR_RRC,"%x.",NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload[i]);
+  }
+
+  LOG_T(NR_RRC,"\n");
+
+#ifdef ITTI_SIM
+  MessageDef *message_p;
+  uint8_t *message_buffer;
+  message_buffer = itti_malloc (TASK_RRC_NRUE,TASK_RRC_GNB_SIM,
+        NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size);
+  memcpy (message_buffer, (uint8_t*)NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload,
+        NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size);
+  message_p = itti_alloc_new_message (TASK_RRC_NRUE, 0, UE_RRC_CCCH_DATA_IND);
+  UE_RRC_CCCH_DATA_IND (message_p).sdu = message_buffer;
+  UE_RRC_CCCH_DATA_IND (message_p).size  = NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size;
+  itti_send_msg_to_task (TASK_RRC_GNB_SIM, ctxt_pP->instance, message_p);
+#endif
+}
+
 void
 nr_rrc_ue_generate_rrcReestablishmentComplete(
   const protocol_ctxt_t *const ctxt_pP,

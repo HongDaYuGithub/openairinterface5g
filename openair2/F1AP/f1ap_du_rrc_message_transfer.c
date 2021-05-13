@@ -902,6 +902,8 @@ int DU_handle_DL_NR_RRC_MESSAGE_TRANSFER(instance_t       instance,
   F1AP_DLRRCMessageTransferIEs_t *ie;
   uint64_t        cu_ue_f1ap_id;
   uint64_t        du_ue_f1ap_id;
+  uint64_t        old_du_ue_f1ap_id;
+  uint64_t        srb_id;
   int             executeDuplication;
   //uint64_t        subscriberProfileIDforRFP;
   //uint64_t        rAT_FrequencySelectionPriority;
@@ -927,9 +929,10 @@ int DU_handle_DL_NR_RRC_MESSAGE_TRANSFER(instance_t       instance,
 
   /* optional */
   /* oldgNB_DU_UE_F1AP_ID */
-  if (0) {
-    F1AP_FIND_PROTOCOLIE_BY_ID(F1AP_DLRRCMessageTransferIEs_t, ie, container,
-                               F1AP_ProtocolIE_ID_id_oldgNB_DU_UE_F1AP_ID, true);
+  F1AP_FIND_PROTOCOLIE_BY_ID(F1AP_DLRRCMessageTransferIEs_t, ie, container,
+                            F1AP_ProtocolIE_ID_id_oldgNB_DU_UE_F1AP_ID, false);
+  if (ie) {
+    old_du_ue_f1ap_id = ie->value.choice.GNB_DU_UE_F1AP_ID_1;
   }
 
   /* mandatory */
