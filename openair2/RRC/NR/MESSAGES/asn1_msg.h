@@ -199,21 +199,15 @@ uint8_t do_NR_ULInformationTransfer(uint8_t **buffer,
 
 uint8_t do_RRCReestablishmentRequest(uint8_t Mod_id, uint8_t *buffer, uint16_t c_rnti);
 
-uint8_t
-do_RRCReestablishment(
-  const protocol_ctxt_t     *const ctxt_pP,
-  rrc_gNB_ue_context_t      *const ue_context_pP,
-  int                              CC_id,
-  uint8_t                   *const buffer,
-  size_t                           buffer_size,
-  //const uint8_t                    transmission_mode,
-  const uint8_t                    Transaction_id,
-  NR_SRB_ToAddModList_t               **SRB_configList
-);
+uint8_t do_RRCReestablishment(const protocol_ctxt_t *const ctxt_pP,
+                              rrc_gNB_ue_context_t *const ue_context_pP,
+                              int CC_id,
+                              uint8_t *const buffer,
+                              const uint8_t Transaction_id,
+                              NR_SRB_ToAddModList_t **SRB_configList);
 
-uint8_t 
-do_RRCReestablishmentComplete(
-    uint8_t *buffer, size_t buffer_size,
-    int64_t rrc_TransactionIdentifier);
+uint8_t do_RRCReestablishmentComplete(uint8_t *buffer, int64_t rrc_TransactionIdentifier);
+
+uint8_t do_NR_Paging(uint8_t Mod_id, uint8_t *buffer, uint32_t tmsi);
 
 #endif  /* __RRC_NR_MESSAGES_ASN1_MSG__H__ */
