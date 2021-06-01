@@ -3127,6 +3127,7 @@ add_executable(nr-ittisim
   ${XFORMSINTERFACE_SOURCE}
   ${T_SOURCE}
   ${SHLIB_LOADER_SOURCES}
+  ${OPENAIR2_DIR}/ENB_APP/flexran_agent_ran_api_to_fix.c
   )
 
 target_link_libraries (nr-ittisim
