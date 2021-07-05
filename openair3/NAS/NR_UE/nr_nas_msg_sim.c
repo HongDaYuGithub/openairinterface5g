@@ -733,13 +733,13 @@ static void generatePduSessionEstablishRequest(int Mod_id, uicc_t * uicc, as_nas
   mm_msg->uplink_nas_transport.requesttype = 1;
   size += 3;
   mm_msg->uplink_nas_transport.snssai.length = 4;
-  //Fixme: it seems there are a lot of memory errors in this: this value was on the stack, 
+  //Fixme: it seems there are a lot of memory errors in this: this value was on the stack,
   // but pushed  in a itti message to another thread
   // this kind of error seems in many places in 5G NAS
   mm_msg->uplink_nas_transport.snssai.value=calloc(1,4);
   mm_msg->uplink_nas_transport.snssai.value[0] = uicc->nssai_sst;
   mm_msg->uplink_nas_transport.snssai.value[1] = (uicc->nssai_sd>>16)&0xFF;
-  mm_msg->uplink_nas_transport.snssai.value[2] = (uicc->nssai_sd>>8)&0xFF; 
+  mm_msg->uplink_nas_transport.snssai.value[2] = (uicc->nssai_sd>>8)&0xFF;
   mm_msg->uplink_nas_transport.snssai.value[3] = (uicc->nssai_sd)&0xFF;
   size += (1+1+4);
   int dnnSize=strlen(uicc->dnnStr);
@@ -779,6 +779,7 @@ static void generatePduSessionEstablishRequest(int Mod_id, uicc_t * uicc, as_nas
 uint8_t get_msg_type(uint8_t *pdu_buffer, uint32_t length) {
   uint8_t          msg_type = 0;
   uint8_t          offset   = 0;
+  nas_msg_header_t nas_msg_header;
 
   if ((pdu_buffer != NULL) && (length > 0)) {
     if (((nas_msg_header_t *)(pdu_buffer))->choice.security_protected_nas_msg_header_t.security_header_type > 0) {
@@ -921,14 +922,21 @@ void *nas_nrue_task(void *args_p)
 	      // AND fix dirsty code copy hereafter of the same!!!
               if (*(payload_container + offset) == 0x29) { // PDU address IEI
                 if ((*(payload_container+offset+1) == 0x05) && (*(payload_container +offset+2) == 0x01)) { // IPV4
+#ifdef ITTI_SIM
                   nas_getparams();
+                  netlink_init_tun("ue", 1);
+#endif
                   sprintf(baseNetAddress, "%d.%d", *(payload_container+offset+3), *(payload_container+offset+4));
                   int third_octet = *(payload_container+offset+5);
                   int fourth_octet = *(payload_container+offset+6);
                   LOG_I(NAS, "Received PDU Session Establishment Accept, UE IP: %d.%d.%d.%d\n",
                     *(payload_container+offset+3), *(payload_container+offset+4),
                     *(payload_container+offset+5), *(payload_container+offset+6));
+#ifdef ITTI_SIM
                   nas_config(1,third_octet,fourth_octet,"oaitun_ue");
+#else
+                  nas_config(1,third_octet,fourth_octet,"ue");
+#endif
                   break;
                 }
               }
@@ -987,9 +995,9 @@ void *nas_nrue_task(void *args_p)
 	    if ((payload_container_length >= PAYLOAD_CONTAINER_LENGTH_MIN) &&
 		(payload_container_length <= PAYLOAD_CONTAINER_LENGTH_MAX))
 	      offset += (PLAIN_5GS_NAS_MESSAGE_HEADER_LENGTH + 3);
-	    if (offset < NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length) 
+	    if (offset < NAS_CONN_ESTABLI_CNF(msg_p).nasMsg.length)
 	      payload_container = pdu_buffer + offset;
-	    
+
 	    while(offset < payload_container_length) {
 	      if (*(payload_container + offset) == 0x29) { // PDU address IEI
 		if ((*(payload_container+offset+1) == 0x05) && (*(payload_container +offset+2) == 0x01)) { // IPV4
