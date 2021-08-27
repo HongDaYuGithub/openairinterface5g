@@ -571,6 +571,8 @@ int main( int argc, char **argv )
     reset_opp_meas();
   }
 
+  NB_UE_INST = 1;
+
   cpuf=get_cpu_freq_GHz();
   itti_init(TASK_MAX, tasks_info);
 
@@ -634,7 +636,7 @@ int main( int argc, char **argv )
                                 0,
                                 0,
                                 0);
-  NR_UE_rrc_inst[ctxt.module_id].Info[0].State = RRC_SI_RECEIVED;
+  NR_UE_rrc_inst[ctxt.module_id].Info[0].SIStatus = RRC_SI_RECEIVED;
 
   nr_rrc_ue_generate_RRCSetupRequest(ctxt.module_id, 0);
 
