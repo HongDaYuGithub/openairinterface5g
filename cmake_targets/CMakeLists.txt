@@ -1811,7 +1811,7 @@ set(NR_SDAP_SRC
   ${OPENAIR2_DIR}/SDAP/nr_sdap/nr_sdap.c
   ${OPENAIR2_DIR}/SDAP/nr_sdap/nr_sdap_entity.c
   )
-  
+
 set(L2_SRC
   ${PDCP_DIR}/pdcp.c
   ${PDCP_DIR}/pdcp_fifo.c
