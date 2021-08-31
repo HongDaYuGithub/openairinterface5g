@@ -1836,7 +1836,7 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
 
   if (AMF_MODE_ENABLED) {
-    uint8_t send_security_mode_command = FALSE;
+    uint8_t send_security_mode_command = false;
     nr_rrc_pdcp_config_security(
       ctxt_pP,
       ue_context_pP,
@@ -1855,10 +1855,10 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
           i, ue_context_pP->ue_context.pduSession[i].status, "PDU_SESSION_STATUS_DONE");
   }
 
-  memset(buffer, 0, sizeof(buffer));
+  memset(buffer, 0, RRC_BUF_SIZE);
 
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
-                                xid,
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
+                                next_xid,
                                *SRB_configList2,
                                 DRB_configList,
                                 NULL,
