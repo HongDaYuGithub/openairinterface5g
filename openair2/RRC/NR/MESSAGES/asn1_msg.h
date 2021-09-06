@@ -204,7 +204,9 @@ uint8_t do_RRCReestablishment(const protocol_ctxt_t *const ctxt_pP,
                               int CC_id,
                               uint8_t *const buffer,
                               const uint8_t Transaction_id,
-                              NR_SRB_ToAddModList_t **SRB_configList);
+                              NR_SRB_ToAddModList_t **SRB_configList,
+                              OCTET_STRING_t *masterCellGroup_from_DU,
+                              NR_ServingCellConfigCommon_t *scc);
 
 uint8_t do_RRCReestablishmentComplete(uint8_t *buffer, int64_t rrc_TransactionIdentifier);
 
