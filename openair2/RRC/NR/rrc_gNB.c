@@ -470,6 +470,7 @@ rrc_gNB_generate_RRCSetup_for_RRCReestablishmentRequest(
   NR_ServingCellConfig_t       *servingcellconfigdedicated = rrc_instance_p->configuration.scd;
 
   ue_context_pP = rrc_gNB_get_next_free_ue_context(ctxt_pP, rrc_instance_p, 0);
+  ue_context_pP = rrc_gNB_get_ue_context(rrc_instance_p, ctxt_pP->rnti);
 
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
   int16_t ret = do_RRCSetup(ue_context_pP,
@@ -523,6 +524,14 @@ rrc_gNB_generate_RRCSetup_for_RRCReestablishmentRequest(
   GNB_RRC_CCCH_DATA_IND (message_p).sdu = message_buffer;
   GNB_RRC_CCCH_DATA_IND (message_p).size  = ue_p->Srb0.Tx_buffer.payload_size;
   itti_send_msg_to_task (TASK_RRC_UE_SIM, ctxt_pP->instance, message_p);
+#else
+  // activate release timer, if RRCSetupComplete not received after 100 frames, remove UE
+  ue_context_pP->ue_context.ue_release_timer = 1;
+  // remove UE after 10 frames after RRCConnectionRelease is triggered
+  ue_context_pP->ue_context.ue_release_timer_thres = 1000;
+  // configure MAC
+  apply_macrlc_config(rrc_instance_p,ue_context_pP,ctxt_pP);
+  apply_pdcp_config(ue_context_pP,ctxt_pP);
 #endif
 }
 
@@ -608,6 +617,7 @@ rrc_gNB_process_RRCSetupComplete(
       PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
   ue_context_pP->ue_context.Srb1.Active = 1;
   ue_context_pP->ue_context.Srb1.Srb_info.Srb_id = 1;
+  ue_context_pP->ue_context.Srb2.Active = 0;
   ue_context_pP->ue_context.StatusRrc = NR_RRC_CONNECTED;
 
   if (AMF_MODE_ENABLED) {
@@ -2369,7 +2379,8 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
               }
             }
           }
-
+          // update rnti
+          ue_context_p->ue_context.rnti=c_rnti;
           LOG_D(NR_RRC,
                 PROTOCOL_NR_RRC_CTXT_UE_FMT" UE context: %p\n",
                 PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),
@@ -4262,7 +4273,7 @@ void *rrc_gnb_task(void *args_p) {
         LOG_I(NR_RRC,"[gNB %ld] Received %s : %p\n", instance, msg_name_p, &F1AP_SETUP_REQ(msg_p));
         rrc_gNB_process_f1_setup_req(&F1AP_SETUP_REQ(msg_p));
         break;
-	
+
       case NR_DU_RRC_DL_INDICATION:
         rrc_process_DU_DL(msg_p, msg_name_p, instance);
         break;
