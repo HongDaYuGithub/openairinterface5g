@@ -2880,13 +2880,11 @@ NR_ServingCellConfigCommon_t *scc
     rrcReestablishment->criticalExtensions.present = NR_RRCReestablishment__criticalExtensions_PR_rrcReestablishment;
     rrcReestablishment->criticalExtensions.choice.rrcReestablishment = CALLOC(1,sizeof(NR_RRCReestablishment_IEs_t));
 
-    uint8_t KgNB_star[32] = { 0 };
+    uint8_t *KgNB_star;
     uint16_t pci = RC.nrrrc[ctxt_pP->module_id]->carrier.physCellId;
-    uint32_t nr_arfcn_dl = (uint64_t)scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA;
+    uint32_t nr_arfcn_dl = (uint64_t)*scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB;
     
-    LOG_I(NR_RRC, "Reestablishment update key pci=%d, earfcn_dl=%u\n",
-          pci,
-          nr_arfcn_dl);
+    LOG_I(NR_RRC, "Reestablishment update key pci=%d, earfcn_dl=%u\n", pci, nr_arfcn_dl);
     
     if (ue_context_pP->ue_context.nh_ncc >= 0) {
       nr_derive_kngran_star(pci, nr_arfcn_dl, ue_context_pP->ue_context.nh, &KgNB_star);

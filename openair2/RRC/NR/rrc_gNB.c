@@ -1682,45 +1682,27 @@ rrc_gNB_generate_RRCReestablishment(
     GNB_RRC_DCCH_DATA_IND (message_p).size  = size;
     itti_send_msg_to_task (TASK_RRC_UE_SIM, ctxt_pP->instance, message_p);
 #else
-#ifndef PHYSIM
     uint8_t *kRRCenc = NULL;
     uint8_t *kRRCint = NULL;
     uint8_t *kUPenc = NULL;
     uint8_t *k_kdf = NULL;
-
     /* Derive the keys from kgnb */
     if (SRB_configList != NULL) {
-      k_kdf = NULL;
       nr_derive_key_up_enc(ue_context_pP->ue_context.ciphering_algorithm,
                            ue_context_pP->ue_context.kgnb,
-                           &k_kdf);
-      /* kUPenc: last 128 bits of key derivation function which returns 256 bits */
-      kUPenc = malloc(16);
-      if (kUPenc == NULL) exit(1);
-      memcpy(kUPenc, k_kdf+16, 16);
-      free(k_kdf);
+                           &kUPenc);
+      nr_derive_key_up_int(ue_context_pP->ue_context.integrity_algorithm,
+                           ue_context_pP->ue_context.kgnb,
+                           &kUPint);
     }
 
-    k_kdf = NULL;
     nr_derive_key_rrc_enc(ue_context_pP->ue_context.ciphering_algorithm,
                           ue_context_pP->ue_context.kgnb,
-                          &k_kdf);
-    /* kRRCenc: last 128 bits of key derivation function which returns 256 bits */
-    kRRCenc = malloc(16);
-    if (kRRCenc == NULL) exit(1);
-    memcpy(kRRCenc, k_kdf+16, 16);
-    free(k_kdf);
-
-    k_kdf = NULL;
+                          &kRRCenc);
     nr_derive_key_rrc_int(ue_context_pP->ue_context.integrity_algorithm,
                           ue_context_pP->ue_context.kgnb,
-                          &k_kdf);
-    /* kRRCint: last 128 bits of key derivation function which returns 256 bits */
-    kRRCint = malloc(16);
-    if (kRRCint == NULL) exit(1);
-    memcpy(kRRCint, k_kdf+16, 16);
-    free(k_kdf);
-#endif
+                          &kRRCint);
+
     nr_rrc_pdcp_config_asn1_req(ctxt_pP,
                                   ue_context_pP->ue_context.SRB_configList,
                                   NULL,
@@ -2423,7 +2405,7 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
                 &DCCH_LCHAN_DESC,
                 LCHAN_DESC_SIZE);
           // SRB2: set  it to go through SRB1 with id 1 (DCCH)
-          ue_context_p->ue_context.Srb2.Active = 1;
+          ue_context_p->ue_context.Srb2.Active = 0;
           ue_context_p->ue_context.Srb2.Srb_info.Srb_id = Idx;
           memcpy(&ue_context_p->ue_context.Srb2.Srb_info.Lchan_desc[0],
                 &DCCH_LCHAN_DESC,
