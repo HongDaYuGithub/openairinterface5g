@@ -232,3 +232,5 @@ boolean_t nr_rrc_pdcp_config_asn1_req(
   ,LTE_PMCH_InfoList_r9_t  *pmch_InfoList_r9
   ,rb_id_t                 *const defaultDRB,
   struct NR_CellGroupConfig__rlc_BearerToAddModList *rlc_bearer2add_list);
+
+int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t instance, uint8_t CC_id);

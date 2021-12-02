@@ -110,6 +110,17 @@ extern RAN_CONTEXT_t RC;
 
 static inline uint64_t bitStr_to_uint64(BIT_STRING_t *asn);
 
+extern void pdcp_config_set_security(
+  const protocol_ctxt_t *const  ctxt_pP,
+  pdcp_t          *const pdcp_pP,
+  const rb_id_t         rb_idP,
+  const uint16_t        lc_idP,
+  const uint8_t         security_modeP,
+  uint8_t         *const kRRCenc,
+  uint8_t         *const kRRCint,
+  uint8_t         *const  kUPenc
+);
+
 mui_t                               rrc_gNB_mui = 0;
 uint8_t first_rrcreconfiguration = 0;
 
@@ -304,6 +315,8 @@ void apply_macrlc_config_reest(gNB_RRC_INST *rrc,
                              rrc->carrier.ssb_SubcarrierOffset,
                              rrc->carrier.pdsch_AntennaPorts,
                              rrc->carrier.pusch_AntennaPorts,
+                             rrc->carrier.sib1_tda,
+                             NULL,
                              NULL,
                              0,
                              rnti,
@@ -1614,17 +1627,13 @@ rrc_gNB_generate_RRCReestablishment(
   const int             CC_id)
 //-----------------------------------------------------------------------------
 {
-  // int UE_id = -1;
-  //NR_LogicalChannelConfig_t  *SRB1_logicalChannelConfig = NULL;
   NR_SRB_ToAddModList_t      **SRB_configList;
-  // NR_SRB_ToAddMod_t          *SRB1_config = NULL;
-  //rrc_gNB_carrier_data_t     *carrier = NULL;
   gNB_RRC_UE_t               *ue_context = NULL;
-  module_id_t                 module_id = ctxt_pP->module_id;
-  // uint16_t                    rnti = ctxt_pP->rnti;
-  uint8_t                             buffer[RRC_BUF_SIZE];
-  uint16_t                            size  = 0;
-
+  module_id_t                module_id = ctxt_pP->module_id;
+  uint8_t                    buffer[RRC_BUF_SIZE];
+  uint16_t                   size  = 0;
+  gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
+  
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
@@ -1637,8 +1646,8 @@ rrc_gNB_generate_RRCReestablishment(
       rrc_gNB_get_next_transaction_identifier(module_id),
       SRB_configList,
       masterCellGroup_from_DU,
-      scc
-      );
+      scc,
+      &rrc_instance_p->carrier);
 
   /* Configure SRB1 for UE */
   if (*SRB_configList != NULL) {
@@ -1685,15 +1694,11 @@ rrc_gNB_generate_RRCReestablishment(
     uint8_t *kRRCenc = NULL;
     uint8_t *kRRCint = NULL;
     uint8_t *kUPenc = NULL;
-    uint8_t *k_kdf = NULL;
     /* Derive the keys from kgnb */
     if (SRB_configList != NULL) {
       nr_derive_key_up_enc(ue_context_pP->ue_context.ciphering_algorithm,
                            ue_context_pP->ue_context.kgnb,
                            &kUPenc);
-      nr_derive_key_up_int(ue_context_pP->ue_context.integrity_algorithm,
-                           ue_context_pP->ue_context.kgnb,
-                           &kUPint);
     }
 
     nr_derive_key_rrc_enc(ue_context_pP->ue_context.ciphering_algorithm,
@@ -4547,6 +4552,130 @@ rrc_gNB_generate_RRCRelease(
   }
 #endif
 }
+int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t instance, uint8_t CC_id){
+    const unsigned int Ttab[4] = {32,64,128,256};
+    uint8_t Tc;
+    uint8_t Tue;
+    uint32_t pfoffset;
+    uint32_t N;  /* N: min(T,nB). total count of PF in one DRX cycle */
+    uint32_t Ns = 0;  /* Ns: max(1,nB/T) */
+    uint8_t i_s;  /* i_s = floor(UE_ID/N) mod Ns */
+    uint32_t T;  /* DRX cycle */
+    uint32_t length;
+    uint8_t buffer[RRC_BUF_SIZE];
+    struct NR_SIB1 *sib1 = RC.nrrrc[instance]->carrier.siblock1->message.choice.c1->choice.systemInformationBlockType1;
+
+    /* get default DRX cycle from configuration */
+    Tc = sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.defaultPagingCycle;
+
+    Tue = paging_drx;
+    /* set T = min(Tc,Tue) */
+    T = Tc < Tue ? Ttab[Tc] : Ttab[Tue];
+    /* set N = PCCH-Config->nAndPagingFrameOffset */
+    switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present) {
+      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneT:
+          N = T;
+          pfoffset = 0;
+          break;
+      case NR_PCCH_Config__nAndPagingFrameOffset_PR_halfT:
+          N = T/2;
+          pfoffset = 1;
+          break;
+      case NR_PCCH_Config__nAndPagingFrameOffset_PR_quarterT:
+          N = T/4;
+          pfoffset = 3;
+          break;
+      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneEighthT:
+          N = T/8;
+          pfoffset = 7;
+          break;
+      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneSixteenthT:
+          N = T/16;
+          pfoffset = 15;
+          break;
+      default:
+          LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  pfoffset error (pfoffset %d) \n",
+                instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present);
+          return (-1);
+
+    }
+
+    switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns) {
+      case NR_PCCH_Config__ns_four:
+        if(*sib1->servingCellConfigCommon->downlinkConfigCommon.initialDownlinkBWP.pdcch_ConfigCommon->choice.setup->pagingSearchSpace == 0){
+          LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error only 1 or 2 is allowed when pagingSearchSpace is 0\n",
+                    instance);
+          return (-1);
+        } else {
+          Ns = 4;
+        }
+        break;
+      case NR_PCCH_Config__ns_two:
+        Ns = 2;
+        break;
+      case NR_PCCH_Config__ns_one:
+        Ns = 1;
+        break;
+      default:
+        LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error (ns %ld) \n",
+                instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns);
+        return (-1);
+    }
+
+    /* insert data to UE_PF_PO or update data in UE_PF_PO */
+    pthread_mutex_lock(&ue_pf_po_mutex);
+    uint8_t i = 0;
+
+    for (i = 0; i < MAX_MOBILES_PER_ENB; i++) {
+      if ((UE_PF_PO[CC_id][i].enable_flag == TRUE && UE_PF_PO[CC_id][i].ue_index_value == (uint16_t)(tmsi%1024))
+            || (UE_PF_PO[CC_id][i].enable_flag != TRUE)) {
+        /* set T = min(Tc,Tue) */
+        UE_PF_PO[CC_id][i].T = T;
+        /* set UE_ID */
+        UE_PF_PO[CC_id][i].ue_index_value = (uint16_t)(tmsi%1024);
+        /* calculate PF and PO */
+        /* set PF_min and PF_offset: (SFN + PF_offset) mod T = (T div N)*(UE_ID mod N) */
+        UE_PF_PO[CC_id][i].PF_min = (T / N) * (UE_PF_PO[CC_id][i].ue_index_value % N);
+        UE_PF_PO[CC_id][i].PF_offset = pfoffset;
+        /* set i_s */
+        /* i_s = floor(UE_ID/N) mod Ns */
+        i_s = (uint8_t)((UE_PF_PO[CC_id][i].ue_index_value / N) % Ns);
+        UE_PF_PO[CC_id][i].i_s = i_s;
+
+        // TODO,set PO
+
+        if (UE_PF_PO[CC_id][i].enable_flag == TRUE) {
+          //paging exist UE log
+          LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Update exist UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
+                  T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
+        } else {
+          /* set enable_flag */
+          UE_PF_PO[CC_id][i].enable_flag = TRUE;
+          //paging new UE log
+          LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Insert a new UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
+                  T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
+        }
+
+        break;
+      }
+    }
+
+    pthread_mutex_unlock(&ue_pf_po_mutex);
+
+    /* Create message for PDCP (DLInformationTransfer_t) */
+    length = do_NR_Paging (instance,
+                           buffer,
+                           tmsi);
+
+    if(length == -1) {
+      LOG_I(NR_RRC, "do_Paging error");
+      return -1;
+    }
+    // TODO, send message to pdcp
+
+    return 0;
+}
+
 void nr_rrc_trigger(protocol_ctxt_t *ctxt, int CC_id, int frame, int subframe)
 {
   MessageDef *message_p;

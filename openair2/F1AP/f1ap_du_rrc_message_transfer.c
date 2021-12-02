@@ -902,7 +902,7 @@ int DU_handle_DL_NR_RRC_MESSAGE_TRANSFER(instance_t       instance,
   F1AP_DLRRCMessageTransferIEs_t *ie;
   uint64_t        cu_ue_f1ap_id;
   uint64_t        du_ue_f1ap_id;
-  uint64_t        old_du_ue_f1ap_id;
+  uint64_t        old_du_ue_f1ap_id=0;
   uint64_t        srb_id;
   int             executeDuplication;
   //uint64_t        subscriberProfileIDforRFP;
