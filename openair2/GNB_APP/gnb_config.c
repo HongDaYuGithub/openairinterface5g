@@ -2286,9 +2286,9 @@ void set_node_type(void) {
 }
 
 void nr_read_config_and_init(void) {
-  MessageDef *msg_p = NULL;
+  /* MessageDef *msg_p = NULL;
   uint32_t    gnb_id;
-  uint32_t    gnb_nb = RC.nb_nr_inst;
+  uint32_t    gnb_nb = RC.nb_nr_inst; */
 
   RCconfig_NR_L1();
   set_node_type();
