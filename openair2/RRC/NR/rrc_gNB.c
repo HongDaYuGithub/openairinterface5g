@@ -1633,6 +1633,7 @@ rrc_gNB_generate_RRCReestablishment(
   uint8_t                    buffer[RRC_BUF_SIZE];
   uint16_t                   size  = 0;
   gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
+  int enable_ciphering=0;
   
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
@@ -1720,13 +1721,15 @@ rrc_gNB_generate_RRCReestablishment(
                                   NULL,
                                   NULL,
                                   get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+    LOG_I(NR_RRC,"Set pdcp security rnti %x nca %d nia %d in Reestablishment\n",ue_context->rnti,ue_context_pP->ue_context.ciphering_algorithm,ue_context_pP->ue_context.integrity_algorithm);
     pdcp_config_set_security(
         ctxt_pP,
         NULL,      /* pdcp_pP not used anymore in NR */
         DCCH,
         DCCH+2,
-        (ue_context_pP->ue_context.ciphering_algorithm )         |
-        (ue_context_pP->ue_context.integrity_algorithm << 4),
+        enable_ciphering ?
+          ue_context_pP->ue_context.ciphering_algorithm | (ue_context_pP->ue_context.integrity_algorithm << 4)
+        : 0 | (ue_context_pP->ue_context.integrity_algorithm << 4),
         kRRCenc,
         kRRCint,
         kUPenc);
