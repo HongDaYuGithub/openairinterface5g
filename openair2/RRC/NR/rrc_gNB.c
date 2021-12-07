@@ -1721,7 +1721,7 @@ rrc_gNB_generate_RRCReestablishment(
                                   NULL,
                                   NULL,
                                   get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
-    LOG_I(NR_RRC,"Set pdcp security rnti %x nca %d nia %d in Reestablishment\n",ue_context->rnti,ue_context_pP->ue_context.ciphering_algorithm,ue_context_pP->ue_context.integrity_algorithm);
+    LOG_I(NR_RRC,"Set pdcp security rnti %x nca %ld nia %d in Reestablishment\n",ue_context->rnti,ue_context_pP->ue_context.ciphering_algorithm,ue_context_pP->ue_context.integrity_algorithm);
     pdcp_config_set_security(
         ctxt_pP,
         NULL,      /* pdcp_pP not used anymore in NR */
