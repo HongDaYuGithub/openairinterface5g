@@ -1643,6 +1643,7 @@ rrc_gNB_generate_RRCReestablishment(
       ue_context_pP,
       CC_id,
       buffer,
+      RRC_BUF_SIZE,
       //(uint8_t) carrier->p_gNB, // at this point we do not have the UE capability information, so it can only be TM1 or TM2
       rrc_gNB_get_next_transaction_identifier(module_id),
       SRB_configList,

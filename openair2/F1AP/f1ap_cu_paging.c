@@ -117,6 +117,6 @@ int CU_send_Paging(instance_t instance, f1ap_paging_ind_t *paging){
       return -1;
     }
 
-    cu_f1ap_itti_send_sctp_data_req(instance, f1ap_du_data_from_du->assoc_id, buffer, len, 0);
+    f1ap_itti_send_sctp_data_req(true, instance, buffer, len, 0);
     return 0;
 }
