@@ -1714,7 +1714,7 @@ rrc_gNB_generate_RRCReestablishment(
                                   ue_context_pP->ue_context.SRB_configList,
                                   NULL,
                                   NULL,
-                                  0xff,
+                                  0,
                                   NULL,
                                   NULL,
                                   NULL,
