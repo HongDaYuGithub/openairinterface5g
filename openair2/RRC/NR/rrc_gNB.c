@@ -1790,6 +1790,8 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
       if ((*SRB_configList2)->list.array[i]->srb_Identity == 2 ) {
         LOG_D(NR_RRC, "get SRB2_config from (ue_context_pP->ue_context.SRB_configList2[%d])\n", xid);
         SRB2_config = (*SRB_configList2)->list.array[i];
+        SRB2_config->reestablishPDCP = CALLOC(1, sizeof(*SRB2_config->reestablishPDCP));
+        *SRB2_config->reestablishPDCP = NR_SRB_ToAddMod__reestablishPDCP_true;
         break;
       }
     }
@@ -1833,6 +1835,8 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
 
     for (i = 0; (i < DRB_configList->list.count) && (i < 3); i++) {
       DRB_config = DRB_configList->list.array[i];
+      DRB_config->reestablishPDCP = CALLOC(1, sizeof(*DRB_config->reestablishPDCP));
+      *DRB_config->reestablishPDCP = NR_DRB_ToAddMod__reestablishPDCP_true;
       // Add DRB to DRB configuration list, for LTE_RRCConnectionReconfigurationComplete
       ASN_SEQUENCE_ADD(&(*DRB_configList2)->list, DRB_config);
     }
