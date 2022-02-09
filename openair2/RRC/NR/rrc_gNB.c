@@ -2375,6 +2375,7 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
             }
           }
           // update rnti
+          ue_context_p->ue_id_rnti=ctxt_pP->rnti;
           ue_context_p->ue_context.rnti=ctxt_pP->rnti;
           LOG_D(NR_RRC,
                 PROTOCOL_NR_RRC_CTXT_UE_FMT" UE context: %p\n",
