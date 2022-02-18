@@ -2984,7 +2984,7 @@ rrc_gNB_decode_dcch(
                     NR_RRCReestablishmentComplete__criticalExtensions_PR_rrcReestablishmentComplete) {
                   rrc_gNB_process_RRCConnectionReestablishmentComplete(ctxt_pP, reestablish_rnti, ue_context_p,
                       ul_dcch_msg->message.choice.c1->choice.rrcReestablishmentComplete->rrc_TransactionIdentifier);
-
+                  mac_remove_nr_ue(ctxt_pP->module_id, reestablish_rnti);
                 }
 
                 //ue_context_p->ue_context.ue_release_timer = 0;
