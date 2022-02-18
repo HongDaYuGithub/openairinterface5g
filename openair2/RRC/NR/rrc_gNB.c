@@ -1586,7 +1586,7 @@ rrc_gNB_process_RRCReconfigurationComplete(
                                 Rlc_info_um);*/
           }
 
-          ue_context_pP->ue_context.DRB_active[drb_id] = 0;
+          //ue_context_pP->ue_context.DRB_active[drb_id] = 0;
           LOG_D(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT" RRC_eNB --- MAC_CONFIG_REQ  (DRB) ---> MAC_eNB\n",
                   PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
 
@@ -1634,7 +1634,7 @@ rrc_gNB_generate_RRCReestablishment(
   uint16_t                   size  = 0;
   gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
-  
+
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
@@ -1949,8 +1949,15 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
 
   memset(buffer, 0, RRC_BUF_SIZE);
 
-  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
-                                next_xid,
+  NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
+  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup);
+  for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
+    cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = CALLOC(1, sizeof(*cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC));
+    *cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = NR_RLC_BearerConfig__reestablishRLC_true;
+  }
+
+  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
+                               next_xid,
                                *SRB_configList2,
                                 DRB_configList,
                                 NULL,
@@ -2374,9 +2381,7 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
               }
             }
           }
-          // update rnti
-          ue_context_p->ue_id_rnti=ctxt_pP->rnti;
-          ue_context_p->ue_context.rnti=ctxt_pP->rnti;
+
           LOG_D(NR_RRC,
                 PROTOCOL_NR_RRC_CTXT_UE_FMT" UE context: %p\n",
                 PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),

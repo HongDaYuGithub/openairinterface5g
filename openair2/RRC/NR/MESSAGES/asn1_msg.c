@@ -2850,6 +2850,7 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
     *SRB_configList = CALLOC(1, sizeof(LTE_SRB_ToAddModList_t));
     ASN_SEQUENCE_ADD(&(*SRB_configList)->list,SRB1_config);
     /****************************** masterCellGroup ******************************/
+    /*
     if (masterCellGroup_from_DU) {
       // decode masterCellGroup OCTET_STRING received from DU and place in ue context
       uper_decode(NULL,
@@ -2877,6 +2878,7 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
       }
     }
     ue_p->masterCellGroup = cellGroupConfig;
+    */
     rrcReestablishment->rrc_TransactionIdentifier = Transaction_id;
     rrcReestablishment->criticalExtensions.present = NR_RRCReestablishment__criticalExtensions_PR_rrcReestablishment;
     rrcReestablishment->criticalExtensions.choice.rrcReestablishment = CALLOC(1,sizeof(NR_RRCReestablishment_IEs_t));
