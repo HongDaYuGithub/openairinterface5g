@@ -2598,23 +2598,14 @@ rrc_gNB_decode_dcch(
             //NGAP_PDUSESSION_RELEASE_RESPONSE
             rrc_gNB_send_NGAP_PDUSESSION_RELEASE_RESPONSE(ctxt_pP, ue_context_p, xid);
           } else if (ue_context_p->ue_context.established_pdu_sessions_flag != 1) {
-            if (ue_context_p->ue_context.nb_of_pdusessions > 0) {
-              rrc_gNB_send_NGAP_PDUSESSION_SETUP_RESP(ctxt_pP,
-                ue_context_p,
-                ul_dcch_msg->message.choice.c1->choice.rrcReconfigurationComplete->rrc_TransactionIdentifier);
-              ue_context_p->ue_context.nb_of_pdusessions = 0;
-            }
-          }
-          if (ue_context_p->ue_context.nb_of_modify_pdusessions > 0) {
-            rrc_gNB_send_NGAP_PDUSESSION_MODIFY_RESP(ctxt_pP,
-                                                     ue_context_p,
-                                                     ul_dcch_msg->message.choice.c1->choice.rrcReconfigurationComplete->rrc_TransactionIdentifier);
-            ue_context_p->ue_context.nb_of_modify_pdusessions = 0;
-            ue_context_p->ue_context.nb_of_failed_pdusessions = 0;
-            memset(ue_context_p->ue_context.modify_pdusession, 0, sizeof(ue_context_p->ue_context.modify_pdusession));
-
-            for(int i = 0; i < NR_NB_RB_MAX; i++) {
-              ue_context_p->ue_context.modify_pdusession[i].xid = -1;
+            if(ue_context_p->ue_context.reestablishment_xid < 0) {
+              if (ue_context_p->ue_context.setup_pdu_sessions > 0) {
+                rrc_gNB_send_NGAP_PDUSESSION_SETUP_RESP(ctxt_pP,
+                                                        ue_context_p,
+                                                        ul_dcch_msg->message.choice.c1->choice.rrcReconfigurationComplete->rrc_TransactionIdentifier);
+              }
+            } else {
+              ue_context_p->ue_context.reestablishment_xid = -1;
             }
           }
         }
@@ -2988,7 +2979,6 @@ rrc_gNB_decode_dcch(
 
                 RC.nrmac[ctxt_pP->module_id]->UE_info.UE_sched_ctrl[UE_id].ue_reestablishment_reject_timer = 0;
 #endif
-                ue_context_p->ue_context.reestablishment_xid = -1;
 
                 if (ul_dcch_msg->message.choice.c1->choice.rrcReestablishmentComplete->criticalExtensions.present ==
                     NR_RRCReestablishmentComplete__criticalExtensions_PR_rrcReestablishmentComplete) {
