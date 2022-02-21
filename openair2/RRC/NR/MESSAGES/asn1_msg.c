@@ -2792,8 +2792,6 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
     //long *logicalchannelgroup = NULL;
     struct NR_SRB_ToAddMod *SRB1_config = NULL;
     struct NR_SRB_ToAddMod *SRB2_config = NULL;
-    NR_CellGroupConfig_t *cellGroupConfig = NULL;
-    char masterCellGroup_buf[1000];
     //gNB_RRC_INST *nrrrc               = RC.nrrrc[ctxt_pP->module_id];
     NR_DL_DCCH_Message_t dl_dcch_msg;
     NR_RRCReestablishment_t *rrcReestablishment = NULL;
@@ -2801,7 +2799,6 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
     ue_context_pP->ue_context.reestablishment_xid = Transaction_id;
     NR_SRB_ToAddModList_t **SRB_configList2 = NULL;
     SRB_configList2 = &ue_context_pP->ue_context.SRB_configList2[Transaction_id];
-    gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
 
     if (*SRB_configList2) {
       free(*SRB_configList2);
@@ -2851,7 +2848,10 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
     ASN_SEQUENCE_ADD(&(*SRB_configList)->list,SRB1_config);
     /****************************** masterCellGroup ******************************/
     /*
-    if (masterCellGroup_from_DU) {
+     NR_CellGroupConfig_t *cellGroupConfig = NULL;
+     char masterCellGroup_buf[1000];
+     gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
+     if (masterCellGroup_from_DU) {
       // decode masterCellGroup OCTET_STRING received from DU and place in ue context
       uper_decode(NULL,
 		  &asn_DEF_NR_CellGroupConfig,   //might be added prefix later
