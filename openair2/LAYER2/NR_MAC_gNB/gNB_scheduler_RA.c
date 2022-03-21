@@ -293,6 +293,7 @@ void schedule_nr_prach(module_id_t module_idP, frame_t frameP, sub_frame_t slotP
 
       UL_tti_req->SFN = frameP;
       UL_tti_req->Slot = slotP;
+      UL_tti_req->rach_present = 1;
       for (int fdm_index=0; fdm_index < fdm; fdm_index++) { // one structure per frequency domain occasion
         for (int td_index=0; td_index<N_t_slot; td_index++) {
 
@@ -1055,7 +1056,7 @@ void fill_msg3_pusch_pdu(nfapi_nr_pusch_pdu_t *pusch_pdu,
                          int msg3_first_rb, int msg3_nb_rb) {
 
 
-  int start_symbol_index,nr_of_symbols;
+  int start_symbol_index, nr_of_symbols;
 
   SLIV2SL(startSymbolAndLength, &start_symbol_index, &nr_of_symbols);
   int mcsindex = -1; // init value
@@ -1067,30 +1068,37 @@ void fill_msg3_pusch_pdu(nfapi_nr_pusch_pdu_t *pusch_pdu,
   pusch_pdu->bwp_size = bwp_size;
   pusch_pdu->subcarrier_spacing = scs;
   pusch_pdu->cyclic_prefix = 0;
+  //targetCodeRate, QAM modOrder, mcs index after 1113
   pusch_pdu->mcs_table = 0;
-  if (scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->msg3_transformPrecoder == NULL)
+  if (scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->msg3_transformPrecoder == NULL) {
     pusch_pdu->transform_precoding = 1;
-  else
+  } else {
     pusch_pdu->transform_precoding = 0;
+  }
   pusch_pdu->data_scrambling_id = *scc->physCellId;
   pusch_pdu->nrOfLayers = 1;
-  pusch_pdu->ul_dmrs_symb_pos = get_l_prime(nr_of_symbols,mappingtype,pusch_dmrs_pos2,pusch_len1,start_symbol_index, scc->dmrs_TypeA_Position);
-  LOG_D(NR_MAC, "MSG3 start_sym:%d NR Symb:%d mappingtype:%d, ul_dmrs_symb_pos:%x\n", start_symbol_index, nr_of_symbols, mappingtype, pusch_pdu->ul_dmrs_symb_pos);
+  pusch_pdu->ul_dmrs_symb_pos = get_l_prime(nr_of_symbols, mappingtype, pusch_dmrs_pos2, pusch_len1, start_symbol_index,
+                                            scc->dmrs_TypeA_Position);
+  LOG_D(NR_MAC, "MSG3 start_sym:%d NR Symb:%d mappingtype:%d, ul_dmrs_symb_pos:%x\n", start_symbol_index, nr_of_symbols,
+        mappingtype, pusch_pdu->ul_dmrs_symb_pos);
   pusch_pdu->dmrs_config_type = 0;
   pusch_pdu->ul_dmrs_scrambling_id = *scc->physCellId; //If provided and the PUSCH is not a msg3 PUSCH, otherwise, L2 should set this to physical cell id.
+  pusch_pdu->pusch_identity = *scc->physCellId; //If provided and the PUSCH is not a msg3 PUSCH, otherwise, L2 should set this to physical cell id.
   pusch_pdu->scid = 0; //DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]. Should match what is sent in DCI 0_1, otherwise set to 0.
-  pusch_pdu->dmrs_ports = 1;  // 6.2.2 in 38.214 only port 0 to be used
   pusch_pdu->num_dmrs_cdm_grps_no_data = 2;  // no data in dmrs symbols as in 6.2.2 in 38.214
+  pusch_pdu->dmrs_ports = 1;  // 6.2.2 in 38.214 only port 0 to be used
   pusch_pdu->resource_alloc = 1; //type 1
+  memset(pusch_pdu->rb_bitmap, 0, 36);
   pusch_pdu->rb_start = msg3_first_rb;
-  if (msg3_nb_rb > pusch_pdu->bwp_size)
-    AssertFatal(1==0,"MSG3 allocated number of RBs exceed the BWP size\n");
-  else
+  if (msg3_nb_rb > pusch_pdu->bwp_size) {
+    AssertFatal(1 == 0, "MSG3 allocated number of RBs exceed the BWP size\n");
+  } else {
     pusch_pdu->rb_size = msg3_nb_rb;
+  }
   pusch_pdu->vrb_to_prb_mapping = 0;
 
   pusch_pdu->frequency_hopping = fh;
-  //pusch_pdu->tx_direct_current_location;//The uplink Tx Direct Current location for the carrier. Only values in the value range of this field between 0 and 3299, which indicate the subcarrier index within the carrier corresponding 1o the numerology of the corresponding uplink BWP and value 3300, which indicates "Outside the carrier" and value 3301, which indicates "Undetermined position within the carrier" are used. [TS38.331, UplinkTxDirectCurrentBWP IE]
+  pusch_pdu->tx_direct_current_location=0;//The uplink Tx Direct Current location for the carrier. Only values in the value range of this field between 0 and 3299, which indicate the subcarrier index within the carrier corresponding 1o the numerology of the corresponding uplink BWP and value 3300, which indicates "Outside the carrier" and value 3301, which indicates "Undetermined position within the carrier" are used. [TS38.331, UplinkTxDirectCurrentBWP IE]
   pusch_pdu->uplink_frequency_shift_7p5khz = 0;
   //Resource Allocation in time domain
   pusch_pdu->start_symbol_index = start_symbol_index;
@@ -1100,6 +1108,19 @@ void fill_msg3_pusch_pdu(nfapi_nr_pusch_pdu_t *pusch_pdu,
   pusch_pdu->pusch_data.harq_process_id = 0;
   pusch_pdu->pusch_data.new_data_indicator = 1;
   pusch_pdu->pusch_data.num_cb = 0;
+
+  // Beamforming
+  pusch_pdu->beamforming.num_prgs = 1;
+  pusch_pdu->beamforming.prg_size = 275;
+  pusch_pdu->beamforming.dig_bf_interface = 1;
+  if (pusch_pdu->beamforming.prgs_list == NULL) {
+    pusch_pdu->beamforming.prgs_list = calloc(pusch_pdu->beamforming.num_prgs, sizeof(*pusch_pdu->beamforming.prgs_list));
+  }
+  if (pusch_pdu->beamforming.prgs_list[0].dig_bf_interface_list == NULL) {
+    pusch_pdu->beamforming.prgs_list[0].dig_bf_interface_list = calloc(pusch_pdu->beamforming.dig_bf_interface, sizeof(*pusch_pdu->beamforming.prgs_list[0].dig_bf_interface_list));
+  }
+  pusch_pdu->beamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
+
   int num_dmrs_symb = 0;
   for(int i = start_symbol_index; i < start_symbol_index+nr_of_symbols; i++)
     num_dmrs_symb += (pusch_pdu->ul_dmrs_symb_pos >> i) & 1;
@@ -1121,6 +1142,7 @@ void fill_msg3_pusch_pdu(nfapi_nr_pusch_pdu_t *pusch_pdu,
 
     pusch_pdu->mcs_index = mcsindex;
     pusch_pdu->pusch_data.tb_size = TBS;
+    AssertFatal(mcsindex<10, "msg3 mcs got to 10 cannot get TBS = 7: pusch_pdu->rb_size %d, pusch_pdu->nr_of_symbols %d\n",pusch_pdu->rb_size,pusch_pdu->nr_of_symbols);
   }
 }
 
@@ -1324,6 +1346,12 @@ void nr_generate_Msg2(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
     dl_req->nPDUs+=1;
     nfapi_nr_dl_tti_pdsch_pdu_rel15_t *pdsch_pdu_rel15 = &dl_tti_pdsch_pdu->pdsch_pdu.pdsch_pdu_rel15;
 
+    pdsch_pdu_rel15->precodingAndBeamforming.num_prgs=1;
+    pdsch_pdu_rel15->precodingAndBeamforming.prg_size=275;
+    pdsch_pdu_rel15->precodingAndBeamforming.dig_bf_interfaces=1;
+    pdsch_pdu_rel15->precodingAndBeamforming.prgs_list[0].pm_idx = 0;
+    pdsch_pdu_rel15->precodingAndBeamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
+
     LOG_A(NR_MAC,"[gNB %d][RAPROC] CC_id %d Frame %d, slotP %d: Generating RA-Msg2 DCI, rnti 0x%x, state %d, CoreSetType %d\n",
           module_idP, CC_id, frameP, slotP, ra->RA_rnti, ra->state,pdcch_pdu_rel15->CoreSetType);
 
@@ -1500,10 +1528,10 @@ void nr_generate_Msg2(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
     T(T_GNB_MAC_DL_RAR_PDU_WITH_DATA, T_INT(module_idP), T_INT(CC_id), T_INT(ra->RA_rnti), T_INT(frameP),
       T_INT(slotP), T_INT(0), T_BUFFER(&tx_req->TLVs[0].value.direct[0], tx_req->TLVs[0].length));
 
-    tx_req->PDU_length = pdsch_pdu_rel15->TBSize[0];
+    tx_req->PDU_length = pdsch_pdu_rel15->TBSize[0] + 4;
     tx_req->PDU_index = pduindex;
     tx_req->num_TLV = 1;
-    tx_req->TLVs[0].length = tx_req->PDU_length + 2;
+    tx_req->TLVs[0].length = tx_req->PDU_length;
     nr_mac->TX_req[CC_id].SFN = frameP;
     nr_mac->TX_req[CC_id].Number_of_PDUs++;
     nr_mac->TX_req[CC_id].Slot = slotP;
@@ -1831,7 +1859,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
                                                                                1);
 
     pdsch_pdu_rel15->precodingAndBeamforming.num_prgs=1;
-    pdsch_pdu_rel15->precodingAndBeamforming.prg_size=275;
+    pdsch_pdu_rel15->precodingAndBeamforming.prg_size=rbSize;
     pdsch_pdu_rel15->precodingAndBeamforming.dig_bf_interfaces=1;
     pdsch_pdu_rel15->precodingAndBeamforming.prgs_list[0].pm_idx = 0;
     pdsch_pdu_rel15->precodingAndBeamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = ra->beam_id;
@@ -1846,6 +1874,12 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
     dci_pdu->CceIndex = CCEIndex;
     dci_pdu->beta_PDCCH_1_0 = 0;
     dci_pdu->powerControlOffsetSS = 1;
+
+    dci_pdu->precodingAndBeamforming.num_prgs=1;
+    dci_pdu->precodingAndBeamforming.prg_size=275;
+    dci_pdu->precodingAndBeamforming.dig_bf_interfaces=1;
+    dci_pdu->precodingAndBeamforming.prgs_list[0].pm_idx = 0;
+    dci_pdu->precodingAndBeamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = ra->beam_id;
 
     dci_pdu_rel15_t dci_payload;
     dci_payload.frequency_domain_assignment.val = PRBalloc_to_locationandbandwidth0(pdsch_pdu_rel15->rbSize,
@@ -1915,10 +1949,10 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
     // DL TX request
     nfapi_nr_pdu_t *tx_req = &nr_mac->TX_req[CC_id].pdu_list[nr_mac->TX_req[CC_id].Number_of_PDUs];
     memcpy(tx_req->TLVs[0].value.direct, harq->transportBlock, sizeof(uint8_t) * harq->tb_size);
-    tx_req->PDU_length =  harq->tb_size;
+    tx_req->PDU_length =  harq->tb_size + 4;
     tx_req->PDU_index = pduindex;
     tx_req->num_TLV = 1;
-    tx_req->TLVs[0].length =  harq->tb_size + 2;
+    tx_req->TLVs[0].length =  harq->tb_size;
     nr_mac->TX_req[CC_id].SFN = frameP;
     nr_mac->TX_req[CC_id].Number_of_PDUs++;
     nr_mac->TX_req[CC_id].Slot = slotP;

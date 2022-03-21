@@ -1282,7 +1282,21 @@ set(SCHED_SRC_NR_UE
 )
 add_library(SCHED_NR_UE_LIB ${SCHED_SRC_NR_UE})
 
+# NVIDIA nvIPC FAPI integration
 
+set(NVIDIA_LIB_DIR  ${OPENAIR_DIR}/fapi/nvidia/lib)
+set(NVIDIA_INC_DIR  ${OPENAIR_DIR}/fapi/nvidia/include)
+set(NVIPC_INC_DIR  ${NVIDIA_INC_DIR}/nvIPC/)
+set(NVLOG_INC_DIR  ${NVIDIA_INC_DIR}/nvlog/)
+
+add_library(nvIPC   STATIC  SHARED IMPORTED GLOBAL)
+set_target_properties(nvIPC     PROPERTIES IMPORTED_LOCATION   ${NVIDIA_LIB_DIR}/libnvipc.so)
+
+add_library(nvlog   STATIC  SHARED IMPORTED GLOBAL)
+set_target_properties(nvlog     PROPERTIES IMPORTED_LOCATION   ${NVIDIA_LIB_DIR}/libnvlog.so)
+
+include_directories(${NVLOG_INC_DIR})
+include_directories(${NVIPC_INC_DIR})
 # nFAPI
 #################################
 set(NFAPI_COMMON_SRC
@@ -2737,7 +2751,12 @@ add_executable(nr-softmodem
   ${T_SOURCE}
   ${SHLIB_LOADER_SOURCES}
   ${OPENAIR2_DIR}/ENB_APP/flexran_agent_ran_api_to_fix.c
+  ${OPENAIR_DIR}/fapi/oai-integration/fapi_nvIPC.c
+  ${OPENAIR_DIR}/fapi/oai-integration/fapi_vnf_p7.c
+  ${OPENAIR_DIR}/fapi/oai-integration/fapi_vnf_p5.c
   )
+
+target_link_libraries (nr-softmodem nvIPC nvlog)
 
 target_link_libraries (nr-softmodem
   -Wl,--start-group

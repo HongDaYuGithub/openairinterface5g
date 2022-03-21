@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <assert.h>
+#include <fapi/oai-integration/fapi_nvIPC.h>
 
 #include "vnf_p7.h"
 
@@ -537,7 +538,7 @@ int vnf_nr_p7_pack_and_send_p7_msg(vnf_p7_t* vnf_p7, nfapi_p7_message_header_t* 
 					nfapi_p7_update_checksum(tx_buffer, segment_size);
 				}
 			
-				nfapi_p7_update_transmit_timestamp(buffer, calculate_transmit_timestamp(p7_connection->sfn, p7_connection->slot, vnf_p7->slot_start_time_hr));	
+				nfapi_p7_update_transmit_timestamp(buffer, calculate_transmit_timestamp(p7_connection->sfn, p7_connection->slot, vnf_p7->slot_start_time_hr));
 
 				send_result = vnf_send_p7_msg(vnf_p7, p7_connection,  &tx_buffer[0], segment_size);
 
@@ -550,14 +551,21 @@ int vnf_nr_p7_pack_and_send_p7_msg(vnf_p7_t* vnf_p7, nfapi_p7_message_header_t* 
 				nfapi_p7_update_checksum(buffer, len);
 			}
 
-			nfapi_p7_update_transmit_timestamp(buffer, calculate_transmit_timestamp(p7_connection->sfn, p7_connection->slot, vnf_p7->slot_start_time_hr));	
+			nfapi_p7_update_transmit_timestamp(buffer, calculate_transmit_timestamp(p7_connection->sfn, p7_connection->slot, vnf_p7->slot_start_time_hr));
 
+      if (header->message_id == 0x80) {
+        printf("(%d.%d) VNF SENDS P7 MSG ID: 0x%02x len: %d bytes:\n", p7_connection->sfn, p7_connection->slot, header->message_id,len);
+        for (int i = 0; i < len; i++) {
+          //printf("buffer[%d]: %d\n", i, buffer[i]);
+        }
+      }
 			// simple case that the message fits in a single segement
 			send_result = vnf_send_p7_msg(vnf_p7, p7_connection, &buffer[0], len);
 		}
 
 		p7_connection->sequence_number++;
-		return send_result;
+
+    return send_result;
 	}
 	else
 	{

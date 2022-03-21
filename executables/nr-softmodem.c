@@ -81,6 +81,8 @@ unsigned short config_frames[4] = {2,9,11,13};
 #include <openair3/ocp-gtpu/gtp_itf.h>
 #include "nfapi/oai_integration/vendor_ext.h"
 
+#include "fapi/oai-integration/fapi_nvIPC.h"
+
 pthread_cond_t nfapi_sync_cond;
 pthread_mutex_t nfapi_sync_mutex;
 int nfapi_sync_var=-1; //!< protected by mutex \ref nfapi_sync_mutex
@@ -629,6 +631,12 @@ int main( int argc, char **argv ) {
     exit(-1);
   }
 
+  if (get_softmodem_params()->aerial){
+    printf("Aerial Mode Enabled\n");
+  }else{
+    printf("Aerial Mode Disabled\n");
+  }
+
   openair0_cfg[0].threequarter_fs = threequarter_fs;
   AMF_MODE_ENABLED = get_softmodem_params()->sa;
   NGAP_CONF_MODE   = get_softmodem_params()->sa;
@@ -665,9 +673,9 @@ int main( int argc, char **argv ) {
 #endif
   LOG_I(HW, "Version: %s\n", PACKAGE_VERSION);
 
-  if (RC.nb_nr_L1_inst > 0)
+  if (RC.nb_nr_L1_inst > 0) {
     RCconfig_NR_L1();
-
+  }
   // don't create if node doesn't connect to RRC/S1/GTP
   int ret=create_gNB_tasks(1);
   AssertFatal(ret==0,"cannot create ITTI tasks\n");
@@ -714,10 +722,11 @@ int main( int argc, char **argv ) {
       break;
   }
 
-  printf("NFAPI MODE:%s\n", nfapi_mode_str);
+  printf("NFAPI MODE:%s\n", nfapi_get_strmode());
 
-  if (NFAPI_MODE==NFAPI_MODE_VNF)
+  if (NFAPI_MODE == NFAPI_MODE_VNF){
     wait_nfapi_init("main?");
+  }
 
   printf("START MAIN THREADS\n");
   // start the main threads
@@ -728,7 +737,6 @@ int main( int argc, char **argv ) {
     printf("Initializing gNB threads single_thread_flag:%d wait_for_sync:%d\n", single_thread_flag,wait_for_sync);
     init_gNB(single_thread_flag,wait_for_sync);
   }
-
   printf("wait_gNBs()\n");
   wait_gNBs();
   printf("About to Init RU threads RC.nb_RU:%d\n", RC.nb_RU);
@@ -752,6 +760,9 @@ int main( int argc, char **argv ) {
     wait_nfapi_init("main?");
   }
 
+  if(NFAPI_MODE == NFAPI_MODE_AERIAL){
+    nvIPC_Init();
+  }
   if (RC.nb_nr_L1_inst > 0) {
     printf("wait RUs\n");
     wait_RUs();
@@ -771,7 +782,7 @@ int main( int argc, char **argv ) {
       load_softscope("nr",&p);
     }
 
-    if (NFAPI_MODE != NFAPI_MODE_PNF && NFAPI_MODE != NFAPI_MODE_VNF) {
+    if (NFAPI_MODE != NFAPI_MODE_PNF && NFAPI_MODE != NFAPI_MODE_VNF && NFAPI_MODE != NFAPI_MODE_AERIAL) {
       printf("Not NFAPI mode - call init_eNB_afterRU()\n");
       init_eNB_afterRU();
     } else {

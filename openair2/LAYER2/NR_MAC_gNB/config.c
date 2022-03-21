@@ -327,7 +327,9 @@ void config_common(int Mod_idP, int pdsch_AntennaPorts, int pusch_AntennaPorts, 
     cfg->prach_config.num_prach_fd_occasions_list[i].num_root_sequences.value = compute_nr_root_seq(scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup,nb_preambles, frame_type, frequency_range);
     cfg->prach_config.num_prach_fd_occasions_list[i].num_root_sequences.tl.tag = NFAPI_NR_CONFIG_NUM_ROOT_SEQUENCES_TAG;
     cfg->num_tlv++;
-    cfg->prach_config.num_prach_fd_occasions_list[i].num_unused_root_sequences.value = 1;
+    cfg->prach_config.num_prach_fd_occasions_list[i].num_unused_root_sequences.value = 0;
+    cfg->prach_config.num_prach_fd_occasions_list[i].num_unused_root_sequences.tl.tag = NFAPI_NR_CONFIG_NUM_UNUSED_ROOT_SEQUENCES_TAG;
+    cfg->num_tlv++;
   }
 
   cfg->prach_config.ssb_per_rach.value = scc->uplinkConfigCommon->initialUplinkBWP->rach_ConfigCommon->choice.setup->ssb_perRACH_OccasionAndCB_PreamblesPerSSB->present-1;
@@ -335,22 +337,13 @@ void config_common(int Mod_idP, int pdsch_AntennaPorts, int pusch_AntennaPorts, 
   cfg->num_tlv++;
 
   // SSB Table Configuration
-  int scs_scaling = 1<<(cfg->ssb_config.scs_common.value);
-  if (scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA < 600000)
-    scs_scaling = scs_scaling*3;
-  if (scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA > 2016666)
-    scs_scaling = scs_scaling>>2;
   uint32_t absolute_diff = (*scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB - scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA);
-
-  RC.nrmac[Mod_idP]->ssb_SubcarrierOffset = absolute_diff%(12*scs_scaling);
-  int sco = 31; // no SIB1
-  if(get_softmodem_params()->sa) {
-    sco = RC.nrmac[Mod_idP]->ssb_SubcarrierOffset;
-    if(frequency_range == FR1)
-      sco <<= cfg->ssb_config.scs_common.value; // 38.211 section 7.4.3.1 in FR1 it is expresses in terms of 15kHz SCS
-  }
-
-  cfg->ssb_table.ssb_offset_point_a.value = absolute_diff/(12*scs_scaling) - 10; //absoluteFrequencySSB is the central frequency of SSB which is made by 20RBs in total
+  int scaling_5khz = scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA < 600000 ? 3 : 1;
+  int sco = (absolute_diff*scaling_5khz)%24;
+  if(frequency_range == FR2)
+    sco >>= 1; // this assumes 120kHz SCS for SSB and subCarrierSpacingCommon (only option supported by OAI for
+  int scs_scaling = frequency_range == FR2 ? 1<<(*scc->ssbSubcarrierSpacing-2) : 1<<*scc->ssbSubcarrierSpacing;
+  cfg->ssb_table.ssb_offset_point_a.value = absolute_diff/(12*scaling_5khz) - 10*scs_scaling; //absoluteFrequencySSB is the central frequency of SSB which is made by 20RBs in total
   cfg->ssb_table.ssb_offset_point_a.tl.tag = NFAPI_NR_CONFIG_SSB_OFFSET_POINT_A_TAG;
   cfg->num_tlv++;
   cfg->ssb_table.ssb_period.value = *scc->ssb_periodicityServingCell;
@@ -359,6 +352,9 @@ void config_common(int Mod_idP, int pdsch_AntennaPorts, int pusch_AntennaPorts, 
   cfg->ssb_table.ssb_subcarrier_offset.value = sco;
   cfg->ssb_table.ssb_subcarrier_offset.tl.tag = NFAPI_NR_CONFIG_SSB_SUBCARRIER_OFFSET_TAG;
   cfg->num_tlv++;
+
+  RC.nrmac[Mod_idP]->ssb_SubcarrierOffset = cfg->ssb_table.ssb_subcarrier_offset.value;
+  RC.nrmac[Mod_idP]->ssb_OffsetPointA = cfg->ssb_table.ssb_offset_point_a.value;
 
   switch (scc->ssb_PositionsInBurst->present) {
     case 1 :
@@ -497,11 +493,11 @@ int rrc_mac_config_req_gNB(module_id_t Mod_idP,
     LOG_D(NR_MAC, "%s() %s:%d RC.nrmac[Mod_idP]->if_inst->NR_PHY_config_req:%p\n", __FUNCTION__, __FILE__, __LINE__, RC.nrmac[Mod_idP]->if_inst->NR_PHY_config_req);
   
     // if in nFAPI mode 
-    if ( (NFAPI_MODE == NFAPI_MODE_PNF || NFAPI_MODE == NFAPI_MODE_VNF) && (RC.nrmac[Mod_idP]->if_inst->NR_PHY_config_req == NULL) ){
+    if ( (NFAPI_MODE == NFAPI_MODE_PNF || NFAPI_MODE == NFAPI_MODE_VNF || NFAPI_MODE == NFAPI_MODE_AERIAL) && (RC.nrmac[Mod_idP]->if_inst->NR_PHY_config_req == NULL) ){
       while(RC.nrmac[Mod_idP]->if_inst->NR_PHY_config_req == NULL) {
         // DJP AssertFatal(RC.nrmac[Mod_idP]->if_inst->PHY_config_req != NULL,"if_inst->phy_config_request is null\n");
         usleep(100 * 1000);
-        printf("Waiting for PHY_config_req\n");
+        printf("Waiting for PHY_config_req %s : %d \n",__FILE__,__LINE__);
       }
     }
     RC.nrmac[Mod_idP]->minRXTXTIMEpdsch = minRXTXTIMEpdsch;

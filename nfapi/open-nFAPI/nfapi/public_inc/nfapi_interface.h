@@ -3971,6 +3971,7 @@ int nfapi_p4_message_unpack(void *pMessageBuf, uint32_t messageBufLen, void *pUn
  */
 int nfapi_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t* config);
 int nfapi_nr_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t* config);
+int fapi_nr_p5_message_pack(void *pMessageBuf, uint32_t messageBufLen, void *pPackedBuf, uint32_t packedBufLen, nfapi_p4_p5_codec_config_t* config);
 
 /*! \brief Decodes an NFAPI P5 message header
  *  \param pMessageBuf A pointer to an encoded P5 message header

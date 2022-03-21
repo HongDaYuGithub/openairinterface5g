@@ -162,7 +162,7 @@ void gNB_dlsch_ulsch_scheduler(module_id_t module_idP,
     /*VNF first entry into scheduler. Since frame numbers for future_ul_tti_req of some future slots 
     will not be set before we encounter them, set them here */
 
-    if (NFAPI_MODE == NFAPI_MODE_VNF){
+    if (NFAPI_MODE == NFAPI_MODE_VNF || NFAPI_MODE == NFAPI_MODE_AERIAL){
       if(vnf_first_sched_entry == 1)
       {
         for (int i = 0; i<num_slots; i++){

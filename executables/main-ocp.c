@@ -1181,7 +1181,7 @@ int main ( int argc, char **argv ) {
 
   /* We need to read RU configuration before FlexRAN starts so it knows what
    * splits to report. Actual RU start comes later. */
-  if  ( NFAPI_MODE != NFAPI_MODE_VNF) {
+  if  ( NFAPI_MODE != NFAPI_MODE_VNF && NFAPI_MODE != NFAPI_MODE_AERIAL) {
     ocpRCconfig_RU(&ru);
     LOG_I(PHY,
           "number of L1 instances %d, number of RU %d, number of CPU cores %d\n",
@@ -1233,7 +1233,7 @@ int main ( int argc, char **argv ) {
   }
 
   /* start threads if only L1 or not a CU */
-  if (RC.nb_inst == 0 || !NODE_IS_CU(node_type) || NFAPI_MODE == NFAPI_MODE_PNF || NFAPI_MODE == NFAPI_MODE_VNF) {
+  if (RC.nb_inst == 0 || !NODE_IS_CU(node_type) || NFAPI_MODE == NFAPI_MODE_PNF || NFAPI_MODE == NFAPI_MODE_VNF || NFAPI_MODE == NFAPI_MODE_AERIAL) {
     // init UE_PF_PO and mutex lock
     pthread_mutex_init(&ue_pf_po_mutex, NULL);
     memset (&UE_PF_PO[0][0], 0, sizeof(UE_PF_PO_t)*MAX_MOBILES_PER_ENB*MAX_NUM_CCs);
@@ -1285,7 +1285,7 @@ int main ( int argc, char **argv ) {
 
   printf("About to Init RU threads RC.nb_RU:%d\n", RC.nb_RU);
 
-  if (RC.nb_RU >0 && NFAPI_MODE!=NFAPI_MODE_VNF) {
+  if (RC.nb_RU >0 && NFAPI_MODE!=NFAPI_MODE_VNF && NFAPI_MODE != NFAPI_MODE_AERIAL) {
     printf("Initializing RU threads\n");
     ocp_init_RU(&ru,
                 get_softmodem_params()->rf_config_file,
@@ -1304,7 +1304,7 @@ int main ( int argc, char **argv ) {
     printf("ALL RUs ready - init eNBs\n");
     sleep(1);
 
-    if (NFAPI_MODE!=NFAPI_MODE_PNF && NFAPI_MODE!=NFAPI_MODE_VNF) {
+    if (NFAPI_MODE!=NFAPI_MODE_PNF && NFAPI_MODE!=NFAPI_MODE_VNF && NFAPI_MODE != NFAPI_MODE_AERIAL) {
       LOG_I(ENB_APP,"Not NFAPI mode - call init_eNB_afterRU()\n");
       init_eNB_afterRU();
     } else {

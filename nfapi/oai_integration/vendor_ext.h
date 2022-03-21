@@ -68,6 +68,7 @@ typedef enum {
   NFAPI_MONOLITHIC=0,
   NFAPI_MODE_PNF,
   NFAPI_MODE_VNF,
+  NFAPI_MODE_AERIAL,
   NFAPI_UE_STUB_PNF,
   NFAPI_UE_STUB_OFFNET,
   NFAPI_MODE_STANDALONE_PNF,
@@ -78,5 +79,6 @@ const char *nfapi_get_strmode(void);
 void nfapi_logmode(void);
 nfapi_mode_t nfapi_getmode(void);
 void nfapi_setmode(nfapi_mode_t nfapi_mode);
+void nfapi_setmode_str(char* nfapi_mode);
 #define NFAPI_MODE (nfapi_getmode())
 #endif // _VENDOR_EXT_

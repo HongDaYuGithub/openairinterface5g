@@ -98,10 +98,11 @@ extern "C"
 #define CONFIG_HLP_NOKRNMOD      "(noS1 only): Use tun instead of namesh module \n"
 #define CONFIG_HLP_DISABLNBIOT   "disable nb-iot, even if defined in config\n"
 #define CONFIG_HLP_USRP_THREAD   "having extra thead for usrp tx\n"
-#define CONFIG_HLP_NFAPI         "Change the nFAPI mode for NR\n"
+#define CONFIG_HLP_NFAPI         "Change the nFAPI mode for NR 'MONOLITHIC', 'PNF', 'VNF', or 'AERIAL' \n"
 #define CONFIG_L1_EMULATOR       "Run in L1 emulated mode (disable PHY layer)\n"
 #define CONFIG_HLP_CONTINUOUS_TX "perform continuous transmission, even in TDD mode (to work around USRP issues)\n"
 #define CONFIG_HLP_STATS_DISABLE "disable globally the stats generation and persistence"
+#define CONFIG_HLP_AERIAL        "enable interoperability with Aerial PNF (disables dependency with OAI PNF, nr-sofmodem must be run with nfapi 2 (VNF mode))\n"
 
 /*-----------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*                                            command line parameters common to eNodeB and UE                                                          */
@@ -126,12 +127,13 @@ extern "C"
 #define USIM_TEST           softmodem_params.usim_test
 #define CHEST_FREQ          softmodem_params.chest_freq
 #define CHEST_TIME          softmodem_params.chest_time
-#define NFAPI               softmodem_params.nfapi
+#define NFAPI               softmodem_params.strnfapi
 #define NSA                 softmodem_params.nsa
 #define NODE_NUMBER         softmodem_params.node_number
 #define NON_STOP            softmodem_params.non_stop
 #define EMULATE_L1          softmodem_params.emulate_l1
 #define CONTINUOUS_TX       softmodem_params.continuous_tx
+#define AERIAL              softmodem_params.aerial
 
 #define DEFAULT_RFCONFIG_FILE    "/usr/local/etc/syriq/ue.band7.tm1.PRB100.NR40.dat";
 
@@ -168,11 +170,12 @@ extern int usrp_tx_thread;
     {"nsa",                  CONFIG_HLP_NSA,          PARAMFLAG_BOOL, iptr:&NSA,                          defintval:0,           TYPE_INT,    0},                     \
     {"node-number",          NULL,                    0,              u16ptr:&NODE_NUMBER,                defuintval:0,          TYPE_UINT16, 0},                     \
     {"usrp-tx-thread-config", CONFIG_HLP_USRP_THREAD, 0,              iptr:&usrp_tx_thread,               defstrval:0,           TYPE_INT,    0},                     \
-    {"nfapi",                CONFIG_HLP_NFAPI,        0,              u8ptr:&nfapi_mode,                  defintval:0,           TYPE_UINT8,  0},                     \
+    {"nfapi",                CONFIG_HLP_NFAPI,        0,              strptr:(char **)&NFAPI,         defstrval:"MONOLOTHIC",        TYPE_STRING, sizeof(TP_CONFIG)},                     \
     {"non-stop",             CONFIG_HLP_NONSTOP,      PARAMFLAG_BOOL, iptr:&NON_STOP,                     defintval:0,           TYPE_INT,    0},                     \
     {"emulate-l1",           CONFIG_L1_EMULATOR,      PARAMFLAG_BOOL, iptr:&EMULATE_L1,                   defintval:0,           TYPE_INT,    0},                     \
     {"continuous-tx",        CONFIG_HLP_CONTINUOUS_TX,PARAMFLAG_BOOL, iptr:&CONTINUOUS_TX,                defintval:0,           TYPE_INT,    0},                     \
     {"disable-stats",        CONFIG_HLP_STATS_DISABLE, PARAMFLAG_BOOL, iptr:&stats_disabled,               defintval:0,           TYPE_INT,    0},                     \
+    {"aerial",               CONFIG_HLP_AERIAL,       PARAMFLAG_BOOL, iptr:&AERIAL,                       defintval:0,           TYPE_INT,    0},                     \
   }
 
 #define CONFIG_HLP_NSA           "Enable NSA mode \n"
@@ -263,12 +266,13 @@ typedef struct {
   int            use_256qam_table;
   int            chest_time;
   int            chest_freq;
-  uint8_t        nfapi;
+  char           strnfapi[1024];
   int            nsa;
   uint16_t       node_number;
   int            non_stop;
   int            emulate_l1;
   int            continuous_tx;
+  int            aerial;
 } softmodem_params_t;
 
 extern uint64_t get_softmodem_optmask(void);

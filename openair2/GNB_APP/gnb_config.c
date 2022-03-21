@@ -82,6 +82,8 @@
 
 #include "RRC/NR/MESSAGES/asn1_msg.h"
 #include "openair2/LAYER2/nr_pdcp/nr_pdcp.h"
+#include "nfapi/oai_integration/vendor_ext.h"
+#include "fapi/oai-integration/fapi_vnf_p5.h"
 
 extern uint16_t sf_ahead;
 int macrlc_has_f1 = 0;
@@ -498,7 +500,7 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
   for (int bwp_i = 0 ; bwp_i<scd->downlinkBWP_ToAddModList->list.count; bwp_i++) {
 
     NR_DMRS_DownlinkConfig_t *dmrs_dl_config = scd->downlinkBWP_ToAddModList->list.array[bwp_i]->bwp_Dedicated->pdsch_Config->choice.setup->dmrs_DownlinkForPDSCH_MappingTypeA->choice.setup;
-    
+
     if (dmrs_dl_config->phaseTrackingRS) {
       // If any of the frequencyDensity values are not set or are out of bounds, PTRS is assumed to be not present
       for (int i = dmrs_dl_config->phaseTrackingRS->choice.setup->frequencyDensity->list.count - 1; i >= 0; i--) {
@@ -543,7 +545,7 @@ void fix_scd(NR_ServingCellConfig_t *scd) {
   for (int bwp_i = 0 ; bwp_i<scd->uplinkConfig->uplinkBWP_ToAddModList->list.count; bwp_i++) {
 
     NR_DMRS_UplinkConfig_t *dmrs_ul_config = scd->uplinkConfig->uplinkBWP_ToAddModList->list.array[bwp_i]->bwp_Dedicated->pusch_Config->choice.setup->dmrs_UplinkForPUSCH_MappingTypeB->choice.setup;
-    
+
     if (dmrs_ul_config->phaseTrackingRS) {
       // If any of the frequencyDensity values are not set or are out of bounds, PTRS is assumed to be not present
       for (int i = dmrs_ul_config->phaseTrackingRS->choice.setup->transformPrecoderDisabled->frequencyDensity->list.count-1; i >= 0; i--) {
@@ -667,28 +669,40 @@ void RCconfig_nr_flexran()
 }
 
 void RCconfig_NR_L1(void) {
-  int j;
-  paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
-  ////////// Identification parameters
-  paramdef_t GNBParams[]  = GNBPARAMS_DESC;
+  int j = 0;
 
-  paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST,NULL,0};
+  if (RC.gNB == NULL) {
+    RC.gNB                       = (PHY_VARS_gNB **)malloc((1+NUMBER_OF_gNB_MAX)*sizeof(PHY_VARS_gNB*));
+    LOG_I(NR_PHY,"RC.gNB = %p\n",RC.gNB);
+    memset(RC.gNB,0,(1+NUMBER_OF_gNB_MAX)*sizeof(PHY_VARS_gNB*));
 
-  config_get( GNBSParams,sizeof(GNBSParams)/sizeof(paramdef_t),NULL); 
-  int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
-  AssertFatal (num_gnbs > 0,"Failed to parse config file no gnbs %s \n",GNB_CONFIG_STRING_ACTIVE_GNBS);
+    if (RC.gNB[j] == NULL) {
+      RC.gNB[j] = calloc(1,sizeof(PHY_VARS_gNB));
+    }
+  }
 
-  config_getlist( &GNBParamList,GNBParams,sizeof(GNBParams)/sizeof(paramdef_t),NULL);
-  int N1 = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_N1_IDX].iptr;
-  int N2 = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_N2_IDX].iptr;
-  int XP = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_XP_IDX].iptr;
-  char *ulprbbl = *GNBParamList.paramarray[0][GNB_ULPRBBLACKLIST_IDX].strptr;
-  if (ulprbbl) LOG_I(NR_PHY,"PRB blacklist %s\n",ulprbbl);
-  char *save = NULL;
-  char *pt = strtok_r(ulprbbl, ",", &save);
-  int prbbl[275];
-  int num_prbbl=0;
-  memset(prbbl,0,275*sizeof(int));
+  if (NFAPI_MODE == NFAPI_MODE_VNF || NFAPI_MODE == NFAPI_MODE_AERIAL) {
+    paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
+    ////////// Identification parameters
+    paramdef_t GNBParams[] = GNBPARAMS_DESC;
+
+    paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST, NULL, 0};
+
+    config_get(GNBSParams, sizeof(GNBSParams) / sizeof(paramdef_t), NULL);
+    int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
+    AssertFatal (num_gnbs > 0, "Failed to parse config file no gnbs %s \n", GNB_CONFIG_STRING_ACTIVE_GNBS);
+
+    config_getlist(&GNBParamList, GNBParams, sizeof(GNBParams) / sizeof(paramdef_t), NULL);
+    int N1 = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_N1_IDX].iptr;
+    int N2 = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_N2_IDX].iptr;
+    int XP = *GNBParamList.paramarray[0][GNB_PDSCH_ANTENNAPORTS_XP_IDX].iptr;
+    char *ulprbbl = *GNBParamList.paramarray[0][GNB_ULPRBBLACKLIST_IDX].strptr;
+    if (ulprbbl) LOG_I(NR_PHY, "PRB blacklist %s\n", ulprbbl);
+    char *save = NULL;
+    char *pt = strtok_r(ulprbbl, ",", &save);
+    int prbbl[275];
+    int num_prbbl = 0;
+    memset(prbbl, 0, 275 * sizeof(int));
 
   while (pt) {
     const int rb = atoi(pt);
@@ -699,15 +713,17 @@ void RCconfig_NR_L1(void) {
     num_prbbl++;
   }
 
+    RC.gNB[j]->num_ulprbbl = num_prbbl;
+    LOG_I(NR_PHY, "Copying %d blacklisted PRB to L1 context\n", num_prbbl);
+    memcpy(RC.gNB[j]->ulprbbl, prbbl, 275 * sizeof(int));
+
+    RC.gNB[j]->ap_N1              = N1;
+    RC.gNB[j]->ap_N2              = N2;
+    RC.gNB[j]->ap_XP              = XP;
+  }
+
   paramdef_t L1_Params[] = L1PARAMS_DESC;
   paramlist_def_t L1_ParamList = {CONFIG_STRING_L1_LIST,NULL,0};
-
-
-  if (RC.gNB == NULL) {
-    RC.gNB                       = (PHY_VARS_gNB **)malloc((1+NUMBER_OF_gNB_MAX)*sizeof(PHY_VARS_gNB*));
-    LOG_I(NR_PHY,"RC.gNB = %p\n",RC.gNB);
-    memset(RC.gNB,0,(1+NUMBER_OF_gNB_MAX)*sizeof(PHY_VARS_gNB*));
-  }
 
   config_getlist( &L1_ParamList,L1_Params,sizeof(L1_Params)/sizeof(paramdef_t), NULL);
 
@@ -728,12 +744,6 @@ void RCconfig_NR_L1(void) {
       RC.gNB[j]->prach_thres        = *(L1_ParamList.paramarray[j][L1_PRACH_DTX_THRESHOLD].uptr);
       RC.gNB[j]->pusch_thres        = *(L1_ParamList.paramarray[j][L1_PUSCH_DTX_THRESHOLD].uptr);
       RC.gNB[j]->max_ldpc_iterations = *(L1_ParamList.paramarray[j][L1_MAX_LDPC_ITERATIONS].uptr);
-      RC.gNB[j]->num_ulprbbl        = num_prbbl;
-      RC.gNB[j]->ap_N1              = N1;
-      RC.gNB[j]->ap_N2              = N2;
-      RC.gNB[j]->ap_XP              = XP;
-      LOG_I(NR_PHY,"Copying %d blacklisted PRB to L1 context\n",num_prbbl);
-      memcpy(RC.gNB[j]->ulprbbl,prbbl,275*sizeof(int));
       if(strcmp(*(L1_ParamList.paramarray[j][L1_TRANSPORT_N_PREFERENCE_IDX].strptr), "local_mac") == 0) {
         //sf_ahead = 2; // Need 4 subframe gap between RX and TX
       }else if (strcmp(*(L1_ParamList.paramarray[j][L1_TRANSPORT_N_PREFERENCE_IDX].strptr), "nfapi") == 0) {
@@ -788,31 +798,33 @@ void RCconfig_NR_L1(void) {
 }
 
 void RCconfig_nr_macrlc() {
-  int               j;
-
-  paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
-  ////////// Identification parameters
-  paramdef_t GNBParams[]  = GNBPARAMS_DESC;
-
-  paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST,NULL,0};
-
-  config_get( GNBSParams,sizeof(GNBSParams)/sizeof(paramdef_t),NULL); 
-  int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
-  AssertFatal (num_gnbs > 0,"Failed to parse config file no gnbs %s \n",GNB_CONFIG_STRING_ACTIVE_GNBS);
-  
-  config_getlist( &GNBParamList,GNBParams,sizeof(GNBParams)/sizeof(paramdef_t),NULL); 
-  char *ulprbbl = *GNBParamList.paramarray[0][GNB_ULPRBBLACKLIST_IDX].strptr; 
-  char *save = NULL;
-  char *pt = strtok_r(ulprbbl, ",", &save);
-  uint16_t prbbl[275];
+  int j = 0;
+  int prbbl[275];
   int num_prbbl=0;
-  memset(prbbl,0,sizeof(prbbl));
-  while (pt) {
-    const int prb = atoi(pt);
-    AssertFatal(prb < 275, "RB %d out of bounds (max 275)\n", prb);
-    prbbl[prb] = 0x3FFF; // all symbols taken
-    pt = strtok_r(NULL, ",", &save);
-    num_prbbl++;
+  if (NFAPI_MODE==NFAPI_MODE_VNF || NFAPI_MODE == NFAPI_MODE_AERIAL) {
+    paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
+    ////////// Identification parameters
+    paramdef_t GNBParams[] = GNBPARAMS_DESC;
+
+    paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST, NULL, 0};
+
+    config_get(GNBSParams, sizeof(GNBSParams) / sizeof(paramdef_t), NULL);
+    int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
+    AssertFatal (num_gnbs > 0, "Failed to parse config file no gnbs %s \n", GNB_CONFIG_STRING_ACTIVE_GNBS);
+
+    config_getlist(&GNBParamList, GNBParams, sizeof(GNBParams) / sizeof(paramdef_t), NULL);
+    char *ulprbbl = *GNBParamList.paramarray[0][GNB_ULPRBBLACKLIST_IDX].strptr;
+    char *save = NULL;
+    char *pt = strtok(ulprbbl, ",");
+    int prb;
+    memset(prbbl, 0, 275 * sizeof(int));
+    while (pt) {
+      const int prb = atoi(pt);
+      AssertFatal(prb < 275, "RB %d out of bounds (max 275)\n", prb);
+      prbbl[prb] = 0x3FFF; // all symbols taken
+      pt = strtok_r(NULL, ",", &save);
+      num_prbbl++;
+    }
   }
   paramdef_t MacRLC_Params[] = MACRLCPARAMS_DESC;
   paramlist_def_t MacRLC_ParamList = {CONFIG_STRING_MACRLC_LIST,NULL,0};
@@ -876,8 +888,11 @@ void RCconfig_nr_macrlc() {
         RC.nrmac[j]->eth_params_s.transp_preference        = ETH_UDP_MODE;
 
         printf("**************** vnf_port:%d\n", RC.nrmac[j]->eth_params_s.my_portc);
-        configure_nr_nfapi_vnf(RC.nrmac[j]->eth_params_s.my_addr, RC.nrmac[j]->eth_params_s.my_portc);
+        configure_nr_nfapi_vnf(RC.nrmac[j]->eth_params_s.my_addr, RC.nrmac[j]->eth_params_s.my_portc,RC.nrmac[j]->eth_params_s.remote_addr,RC.nrmac[j]->eth_params_s.remote_portd,RC.nrmac[j]->eth_params_s.my_portd);
         printf("**************** RETURNED FROM configure_nfapi_vnf() vnf_port:%d\n", RC.nrmac[j]->eth_params_s.my_portc);
+      }else if(strcmp(*(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_S_PREFERENCE_IDX].strptr), "aerial") == 0){
+        printf("Configuring VNF for Aerial connection\n");
+        aerial_configure_nr_fapi_vnf();
       }else { // other midhaul
         AssertFatal(1==0,"MACRLC %d: %s unknown southbound midhaul\n",j,*(MacRLC_ParamList.paramarray[j][MACRLC_TRANSPORT_S_PREFERENCE_IDX].strptr));
       } 
@@ -1971,7 +1986,7 @@ int RCconfig_NR_DU_F1(MessageDef *msg_p, uint32_t i) {
           SEQUENCE_free( &asn_DEF_NR_BCCH_DL_SCH_Message, bcch_message, 1 );
           exit(1);
         }
-       
+
         NR_SIB1_t *bcch_SIB1 = bcch_message->message.choice.c1->choice.systemInformationBlockType1;
         f1Setup->sib1[k] = calloc(1,rrc->carrier.sizeof_SIB1);
         asn_enc_rval_t enc_rval = uper_encode_to_buffer(&asn_DEF_NR_SIB1,

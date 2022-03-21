@@ -2744,6 +2744,9 @@ void nr_csirs_scheduling(int Mod_idP,
           // According to last paragraph of TS 38.214 5.2.2.3.1
           uint16_t BWPSize = NRRIV2BW(genericParameters->locationAndBandwidth, MAX_BWP_SIZE);
           uint16_t BWPStart = NRRIV2PRBOFFSET(genericParameters->locationAndBandwidth, MAX_BWP_SIZE);
+          csirs_pdu_rel15->bwp_size  = BWPSize;
+          csirs_pdu_rel15->bwp_start = BWPStart;
+
           if (resourceMapping.freqBand.startingRB < BWPStart) {
             csirs_pdu_rel15->start_rb = BWPStart;
           } else {

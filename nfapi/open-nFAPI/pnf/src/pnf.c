@@ -1741,7 +1741,9 @@ int pnf_nr_pack_and_send_p5_message(pnf_t* pnf, nfapi_p4_p5_message_header_t* ms
 		NFAPI_TRACE(NFAPI_TRACE_ERROR, "nfapi_p5_message_pack failed (%d)\n", packed_len);
 		return -1;
 	}
-
+  for(int i = 0; i < packed_len;i++){
+    printf(" PNF msg->msg_buf[%d] = 0x%02x\n",i,((uint8_t*)pnf->tx_message_buffer)[i]);
+  }
 	return pnf_send_message(pnf, pnf->tx_message_buffer, packed_len, 0/*msg->stream_id*/);
 }
 
@@ -2040,8 +2042,10 @@ int pnf_read_dispatch_message(pnf_t* pnf)
 		{
 			NFAPI_TRACE(NFAPI_TRACE_INFO, "PNF Failed to unpack p5 message header\n");
 			return 0;
-		}
-		message_size = header.message_length;
+		}else{
+      NFAPI_TRACE(NFAPI_TRACE_INFO, "PNF Unpack p5 message header success\n");
+    }
+		message_size = header.message_length+header_buffer_size;
 
 		// now have the size of the mesage
 	}
@@ -2172,7 +2176,7 @@ int pnf_nr_read_dispatch_message(pnf_t* pnf)
 			NFAPI_TRACE(NFAPI_TRACE_INFO, "PNF Failed to unpack p5 message header\n");
 			return 0;
 		}
-		message_size = header.message_length;
+		message_size = header.message_length+header_buffer_size;
 
 		// now have the size of the mesage
 	}
@@ -2194,7 +2198,7 @@ int pnf_nr_read_dispatch_message(pnf_t* pnf)
 	{
 		int flags = 0;
 		(void)memset(&sndrcvinfo, 0, sizeof(struct sctp_sndrcvinfo));
-
+    printf("PNF Received message with size: %d\n",message_size);
 		int recvmsg_result = sctp_recvmsg(pnf->p5_sock, read_buffer, message_size, (struct sockaddr*)&addr, &addr_len, &sndrcvinfo, &flags);
 		if(recvmsg_result == -1)
 		{
@@ -2206,7 +2210,7 @@ int pnf_nr_read_dispatch_message(pnf_t* pnf)
 			// print the received message
 			printf("\n MESSAGE RECEIVED: \n");
 			for(int i=0; i<message_size; i++){
-				printf("%d", read_buffer[i]);
+				printf("read_buffer[%d] = 0x%02x\n",i, read_buffer[i]);
 			}
 			printf("\n");
 #endif

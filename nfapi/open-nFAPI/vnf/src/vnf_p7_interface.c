@@ -658,6 +658,7 @@ int nfapi_vnf_p7_ul_config_req(nfapi_vnf_p7_config_t* config, nfapi_ul_config_re
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_ul_dci_req(nfapi_vnf_p7_config_t* config, nfapi_nr_ul_dci_request_t* req)
 {
 	if(config == 0 || req == 0)
@@ -666,6 +667,7 @@ int nfapi_vnf_p7_ul_dci_req(nfapi_vnf_p7_config_t* config, nfapi_nr_ul_dci_reque
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_nr_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_hi_dci0_req(nfapi_vnf_p7_config_t* config, nfapi_hi_dci0_request_t* req)
 {
 	if(config == 0 || req == 0)
@@ -674,6 +676,7 @@ int nfapi_vnf_p7_hi_dci0_req(nfapi_vnf_p7_config_t* config, nfapi_hi_dci0_reques
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_tx_data_req(nfapi_vnf_p7_config_t* config, nfapi_nr_tx_data_request_t* req)
 {
 	if(config == 0 || req == 0)
@@ -682,6 +685,7 @@ int nfapi_vnf_p7_tx_data_req(nfapi_vnf_p7_config_t* config, nfapi_nr_tx_data_req
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_nr_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_tx_req(nfapi_vnf_p7_config_t* config, nfapi_tx_request_t* req)
 {
 	if(config == 0 || req == 0)
@@ -690,6 +694,7 @@ int nfapi_vnf_p7_tx_req(nfapi_vnf_p7_config_t* config, nfapi_tx_request_t* req)
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_lbt_dl_config_req(nfapi_vnf_p7_config_t* config, nfapi_lbt_dl_config_request_t* req)
 {
 	if(config == 0 || req == 0)
@@ -698,6 +703,7 @@ int nfapi_vnf_p7_lbt_dl_config_req(nfapi_vnf_p7_config_t* config, nfapi_lbt_dl_c
 	vnf_p7_t* vnf_p7 = (vnf_p7_t*)config;
 	return vnf_p7_pack_and_send_p7_msg(vnf_p7, &req->header);
 }
+
 int nfapi_vnf_p7_vendor_extension(nfapi_vnf_p7_config_t* config, nfapi_p7_message_header_t* header)
 {
 	if(config == 0 || header == 0)

@@ -61,7 +61,9 @@ int l1_north_init_gNB() {
       if ((RC.gNB[i]->if_inst =  NR_IF_Module_init(i))<0) return(-1);
       
       LOG_I(PHY,"%s() RC.gNB[%d] installing callbacks\n", __FUNCTION__, i);
+      printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
       RC.gNB[i]->if_inst->NR_PHY_config_req = nr_phy_config_request;
+      printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
       RC.gNB[i]->if_inst->NR_Schedule_response = nr_schedule_response;
     }
   } else {
@@ -875,8 +877,9 @@ void phy_free_nr_gNB(PHY_VARS_gNB *gNB)
 
 //Adding nr_schedule_handler
 void install_nr_schedule_handlers(NR_IF_Module_t *if_inst)
-{
+{ printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
   if_inst->NR_PHY_config_req = nr_phy_config_request;
+  printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
   if_inst->NR_Schedule_response = nr_schedule_response;
 }
 /*
@@ -899,7 +902,7 @@ void nr_phy_config_request_sim(PHY_VARS_gNB *gNB,
   NR_DL_FRAME_PARMS *fp                                   = &gNB->frame_parms;
   nfapi_nr_config_request_scf_t *gNB_config               = &gNB->gNB_config;
   //overwrite for new NR parameters
-
+  printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
   uint64_t rev_burst=0;
   for (int i=0; i<64; i++)
     rev_burst |= (((position_in_burst>>(63-i))&0x01)<<i);
@@ -949,6 +952,7 @@ void nr_phy_config_request_sim(PHY_VARS_gNB *gNB,
 
 
 void nr_phy_config_request(NR_PHY_Config_t *phy_config) {
+  printf ("FUNC: %s, FILE: %s, LINE: %d\n",__FUNCTION__,__FILE__,__LINE__);
   uint8_t Mod_id = phy_config->Mod_id;
   uint8_t short_sequence, num_sequences, rootSequenceIndex, fd_occasion;
   NR_DL_FRAME_PARMS *fp = &RC.gNB[Mod_id]->frame_parms;

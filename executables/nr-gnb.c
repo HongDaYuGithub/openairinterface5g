@@ -243,16 +243,18 @@ void rx_func(void *param) {
 
   int tx_slot_type = nr_slot_select(cfg,frame_rx,slot_tx);
   if (tx_slot_type == NR_DOWNLINK_SLOT || tx_slot_type == NR_MIXED_SLOT) {
-    notifiedFIFO_elt_t *res;
-    processingData_L1tx_t *syncMsg;
-    // Its a FIFO so it maitains the order in which the MAC fills the messages
-    // so no need for checking for right slot
-    res = pullTpool(gNB->L1_tx_filled, gNB->threadPool);
-    syncMsg = (processingData_L1tx_t *)NotifiedFifoData(res);
-    syncMsg->gNB = gNB;
-    syncMsg->timestamp_tx = info->timestamp_tx;
-    res->key = slot_tx;
-    pushTpool(gNB->threadPool, res);
+    if (NFAPI_MODE != NFAPI_MODE_PNF) {
+      notifiedFIFO_elt_t *res;
+      processingData_L1tx_t *syncMsg;
+      // Its a FIFO so it maitains the order in which the MAC fills the messages
+      // so no need for checking for right slot
+      res = pullTpool(gNB->L1_tx_filled, gNB->threadPool);
+      syncMsg = (processingData_L1tx_t *) NotifiedFifoData(res);
+      syncMsg->gNB = gNB;
+      syncMsg->timestamp_tx = info->timestamp_tx;
+      res->key = slot_tx;
+      pushTpool(gNB->threadPool, res);
+    }
   } else if (get_softmodem_params()->continuous_tx) {
     notifiedFIFO_elt_t *res = pullTpool(gNB->L1_tx_free, gNB->threadPool);
     processingData_L1tx_t *syncMsg = (processingData_L1tx_t *)NotifiedFifoData(res);
@@ -426,6 +428,9 @@ void init_gNB_Tpool(int inst) {
   // ULSCH decoding threadpool
   gNB->threadPool = (tpool_t*)malloc(sizeof(tpool_t));
   int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
+  if (gNB->thread_pool_size == 0) {
+    gNB->thread_pool_size = 8;
+  }
   LOG_I(PHY,"Number of threads requested in config file: %d, Number of threads available on this machine: %d\n",gNB->thread_pool_size,numCPU);
   int threadCnt = min(numCPU, gNB->thread_pool_size);
   if (threadCnt < 2) LOG_E(PHY,"Number of threads for gNB should be more than 1. Allocated only %d\n",threadCnt);
@@ -466,8 +471,11 @@ void init_gNB_Tpool(int inst) {
     pushNotifiedFIFO(gNB->L1_tx_free,msgL1Tx); // to unblock the process in the beginning
   }
 
-  if ((!get_softmodem_params()->emulate_l1) && (!IS_SOFTMODEM_NOSTATS_BIT))
-     threadCreate(&proc->L1_stats_thread,nrL1_stats_thread,(void*)gNB,"L1_stats",-1,OAI_PRIORITY_RT_LOW);
+  if ((!get_softmodem_params()->emulate_l1) && (!IS_SOFTMODEM_NOSTATS_BIT)) {
+    if (NFAPI_MODE!=NFAPI_MODE_VNF && NFAPI_MODE != NFAPI_MODE_AERIAL) {
+      threadCreate(&proc->L1_stats_thread,nrL1_stats_thread,(void*)gNB,"L1_stats",-1,OAI_PRIORITY_RT_LOW);
+    }
+  }
 
   threadCreate(&proc->pthread_tx_reorder, tx_reorder_thread, (void *)gNB, "thread_tx_reorder", -1, OAI_PRIORITY_RT_MAX);
 

@@ -1108,6 +1108,13 @@ void nr_schedule_ue_spec(module_id_t module_id,
     pdsch_pdu->StartSymbolIndex = ps->startSymbolIndex;
     pdsch_pdu->NrOfSymbols = ps->nrOfSymbols;
     // Precoding
+
+    pdsch_pdu->precodingAndBeamforming.num_prgs=1;
+    pdsch_pdu->precodingAndBeamforming.prg_size=275;
+    pdsch_pdu->precodingAndBeamforming.dig_bf_interfaces=1;
+    pdsch_pdu->precodingAndBeamforming.prgs_list[0].pm_idx = 0;
+    pdsch_pdu->precodingAndBeamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
+
     if (sched_ctrl->set_pmi) {
       const int report_id = sched_ctrl->CSI_report.cri_ri_li_pmi_cqi_report.csi_report_id;
       nr_csi_report_t *csi_report = &UE->csi_report_template[report_id];
@@ -1178,6 +1185,13 @@ void nr_schedule_ue_spec(module_id_t module_id,
     dci_pdu->CceIndex = sched_ctrl->cce_index;
     dci_pdu->beta_PDCCH_1_0 = 0;
     dci_pdu->powerControlOffsetSS = 1;
+
+    dci_pdu->precodingAndBeamforming.num_prgs=1;
+    dci_pdu->precodingAndBeamforming.prg_size=275;
+    dci_pdu->precodingAndBeamforming.dig_bf_interfaces=1;
+    dci_pdu->precodingAndBeamforming.prgs_list[0].pm_idx = 0;
+    dci_pdu->precodingAndBeamforming.prgs_list[0].dig_bf_interface_list[0].beam_idx = 0;
+
     /* DCI payload */
     dci_pdu_rel15_t dci_payload;
     memset(&dci_payload, 0, sizeof(dci_pdu_rel15_t));
@@ -1206,6 +1220,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
     dci_payload.pdsch_to_harq_feedback_timing_indicator.val = pucch->timing_indicator; // PDSCH to HARQ TI
     dci_payload.antenna_ports.val = ps->dmrs_ports_id;
     dci_payload.dmrs_sequence_initialization.val = pdsch_pdu->SCID;
+
     LOG_D(NR_MAC,
           "%4d.%2d DCI type 1 payload: freq_alloc %d (%d,%d,%d), "
           "nrOfLayers %d, time_alloc %d, vrb to prb %d, mcs %d tb_scaling %d ndi %d rv %d tpc %d ti %d\n",

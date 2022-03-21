@@ -153,9 +153,9 @@ void *gNB_app_task(void *args_p)
   itti_mark_task_ready (TASK_GNB_APP);
 
   LOG_I(PHY, "%s() Task ready initialize structures\n", __FUNCTION__);
-
-  RCconfig_NR_L1();
-
+  if(NFAPI_MODE != NFAPI_MODE_VNF && NFAPI_MODE !=NFAPI_MODE_PNF && NFAPI_MODE != NFAPI_MODE_AERIAL){
+    RCconfig_NR_L1();
+  }
   if (RC.nb_nr_macrlc_inst>0) RCconfig_nr_macrlc();
 
   LOG_I(PHY, "%s() RC.nb_nr_L1_inst:%d\n", __FUNCTION__, RC.nb_nr_L1_inst);
@@ -185,15 +185,15 @@ void *gNB_app_task(void *args_p)
 	  __attribute__((unused)) uint32_t x2_register_gnb_pending = gNB_app_register_x2 (gnb_id_start, gnb_id_end);
   }
 
-  /* For the CU case the gNB registration with the AMF might have to take place after the F1 setup, as the PLMN info
-     * can originate from the DU. Add check on whether x2ap is enabled to account for ENDC NSA scenario.*/
-  if ((AMF_MODE_ENABLED || is_x2ap_enabled()) && !NODE_IS_DU(RC.nrrrc[0]->node_type) ) { //&& !NODE_IS_CU(RC.nrrrc[0]->node_type)) {
-    /* Try to register each gNB */
-    //registered_gnb = 0;
-    __attribute__((unused)) uint32_t register_gnb_pending = gNB_app_register (gnb_id_start, gnb_id_end);
-  }
-  
   if (RC.nb_nr_inst > 0) {
+    /* For the CU case the gNB registration with the AMF might have to take place after the F1 setup, as the PLMN info
+       * can originate from the DU. Add check on whether x2ap is enabled to account for ENDC NSA scenario.*/
+    if ((AMF_MODE_ENABLED || is_x2ap_enabled()) && !NODE_IS_DU(RC.nrrrc[0]->node_type) ) { //&& !NODE_IS_CU(RC.nrrrc[0]->node_type)) {
+      /* Try to register each gNB */
+      //registered_gnb = 0;
+      __attribute__((unused)) uint32_t register_gnb_pending = gNB_app_register (gnb_id_start, gnb_id_end);
+    }
+
     if (NODE_IS_CU(RC.nrrrc[0]->node_type)) {
 
       if (itti_create_task(TASK_CU_F1, F1AP_CU_task, NULL) < 0) {

@@ -1640,6 +1640,29 @@ void pnf_handle_dl_tti_request(void* pRecvMsg, int recvMsgLen, pnf_p7_t* pnf_p7)
 			pnf_p7->slot_buffer[buffer_index].dl_tti_req = req;
 
 			pnf_p7->stats.dl_tti_ontime++;
+
+              for (int i = 0; i < pnf_p7->slot_buffer[buffer_index].dl_tti_req->dl_tti_request_body.nPDUs; i++) {
+                switch(pnf_p7->slot_buffer[buffer_index].dl_tti_req->dl_tti_request_body.dl_tti_pdu_list[i].PDUType){
+                  case 0x00: // PDCCH
+                    printf("(%d.%d) PDCCH payload: 0x",req->SFN,req->Slot);
+                    for (int j = 0; j < 8; j++) {
+                      printf("%02x", pnf_p7->slot_buffer[buffer_index].dl_tti_req->dl_tti_request_body.dl_tti_pdu_list[i].pdcch_pdu.pdcch_pdu_rel15.dci_pdu->Payload[j]);
+                    }
+                    printf("\n");
+                    break;
+                  case 0x01: // PDSCH
+                    printf("(%d.%d) PDSCH Nb of RBs = %d\n",req->SFN,req->Slot,pnf_p7->slot_buffer[buffer_index].dl_tti_req->dl_tti_request_body.dl_tti_pdu_list[i].pdsch_pdu.pdsch_pdu_rel15.rbSize);
+                    break;
+                  case 0x02: // CSI-RS
+                    break;
+                  case 0x03: // SSB
+                    printf("(%d.%d) SSB PBCH payload: 0x%08x\n",req->SFN,req->Slot, pnf_p7->slot_buffer[buffer_index].dl_tti_req->dl_tti_request_body.dl_tti_pdu_list[i].ssb_pdu.ssb_pdu_rel15.bchPayload);
+                    break;
+                  default://invalid
+                    break;
+
+                }
+              }
 		}
 		else
 		{
@@ -3060,7 +3083,7 @@ int pnf_p7_message_pump(pnf_p7_t* pnf_p7)
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = pnf_p7->_public.local_p7_port;
+	addr.sin_port = htons(pnf_p7->_public.local_p7_port);
 
 	if(pnf_p7->_public.local_p7_addr == 0)
 	{
@@ -3232,7 +3255,7 @@ int pnf_nr_p7_message_pump(pnf_p7_t* pnf_p7)
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = pnf_p7->_public.local_p7_port;
+	addr.sin_port = htons(pnf_p7->_public.local_p7_port);
 
 	if(pnf_p7->_public.local_p7_addr == 0)
 	{
@@ -3304,8 +3327,8 @@ int pnf_nr_p7_message_pump(pnf_p7_t* pnf_p7)
 
 		uint32_t now_hr_time = pnf_get_current_time_hr();
 
-		
-		
+
+
 
 		if(selectRetval == 0)
 		{	
