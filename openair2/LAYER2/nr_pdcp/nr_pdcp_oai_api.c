@@ -906,12 +906,15 @@ static void add_srb(int is_gnb, int rnti, struct NR_SRB_ToAddMod *s,
   nr_pdcp_manager_unlock(nr_pdcp_ue_manager);
 }
 
-static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
+static void add_drb_am(int is_gnb,
+                       int rnti,
+                       rnti_t reestablish_rnti,
+                       struct NR_DRB_ToAddMod *s,
                        int ciphering_algorithm,
                        int integrity_algorithm,
                        unsigned char *ciphering_key,
-                       unsigned char *integrity_key)
-{
+                       unsigned char *integrity_key) {
+
   nr_pdcp_entity_t *pdcp_drb;
   nr_pdcp_ue_t *ue;
 
@@ -993,7 +996,13 @@ static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
                                   has_integrity ? integrity_key : NULL);
     nr_pdcp_ue_add_drb_pdcp_entity(ue, drb_id, pdcp_drb);
 
-    LOG_D(PDCP, "%s:%d:%s: added drb %d to ue rnti %x\n", __FILE__, __LINE__, __FUNCTION__, drb_id, rnti);
+    if (reestablish_rnti > 0) {
+      nr_pdcp_ue_t *reestablish_ue = nr_pdcp_manager_get_ue(nr_pdcp_ue_manager, reestablish_rnti);
+      if (reestablish_ue != NULL) {
+        pdcp_drb->tx_next = reestablish_ue->drb[drb_id-1]->tx_next;
+        LOG_I(PDCP, "Applying tx_next %d in DRB %d from old RNTI 0x%04x to new RNTI 0x%04x\n", reestablish_ue->drb[drb_id-1]->tx_next, drb_id, reestablish_rnti, rnti);
+      }
+    }
 
     new_nr_sdap_entity(has_sdap,
                        rnti,
@@ -1007,22 +1016,25 @@ static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
   nr_pdcp_manager_unlock(nr_pdcp_ue_manager);
 }
 
-static void add_drb(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
+static void add_drb(int is_gnb,
+                    int rnti,
+                    rnti_t reestablish_rnti,
+                    struct NR_DRB_ToAddMod *s,
                     NR_RLC_Config_t *rlc_Config,
                     int ciphering_algorithm,
                     int integrity_algorithm,
                     unsigned char *ciphering_key,
-                    unsigned char *integrity_key)
-{
+                    unsigned char *integrity_key) {
+
   switch (rlc_Config->present) {
   case NR_RLC_Config_PR_am:
-    add_drb_am(is_gnb, rnti, s, ciphering_algorithm, integrity_algorithm,
+    add_drb_am(is_gnb, rnti, reestablish_rnti, s, ciphering_algorithm, integrity_algorithm,
                ciphering_key, integrity_key);
     break;
   case NR_RLC_Config_PR_um_Bi_Directional:
     //add_drb_um(rnti, s);
     /* hack */
-    add_drb_am(is_gnb, rnti, s, ciphering_algorithm, integrity_algorithm,
+    add_drb_am(is_gnb, rnti, reestablish_rnti, s, ciphering_algorithm, integrity_algorithm,
                ciphering_key, integrity_key);
     break;
   default:
@@ -1033,21 +1045,20 @@ static void add_drb(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
   LOG_I(PDCP, "%s:%s:%d: added DRB for UE RNTI %x\n", __FILE__, __FUNCTION__, __LINE__, rnti);
 }
 
-boolean_t nr_rrc_pdcp_config_asn1_req(
-  const protocol_ctxt_t *const  ctxt_pP,
-  NR_SRB_ToAddModList_t  *const srb2add_list,
-  NR_DRB_ToAddModList_t  *const drb2add_list,
-  NR_DRB_ToReleaseList_t *const drb2release_list,
-  const uint8_t                   security_modeP,
-  uint8_t                  *const kRRCenc,
-  uint8_t                  *const kRRCint,
-  uint8_t                  *const kUPenc,
-  uint8_t                  *const kUPint
-  ,LTE_PMCH_InfoList_r9_t  *pmch_InfoList_r9
-  ,rb_id_t                 *const defaultDRB,
-  struct NR_CellGroupConfig__rlc_BearerToAddModList *rlc_bearer2add_list)
-  //struct NR_RLC_Config     *rlc_Config)
-{
+boolean_t nr_rrc_pdcp_config_asn1_req(const protocol_ctxt_t    *const  ctxt_pP,
+                                      NR_SRB_ToAddModList_t    *const srb2add_list,
+                                      NR_DRB_ToAddModList_t    *const drb2add_list,
+                                      NR_DRB_ToReleaseList_t   *const drb2release_list,
+                                      const uint8_t            security_modeP,
+                                      uint8_t                  *const kRRCenc,
+                                      uint8_t                  *const kRRCint,
+                                      uint8_t                  *const kUPenc,
+                                      uint8_t                  *const kUPint,
+                                      LTE_PMCH_InfoList_r9_t   *pmch_InfoList_r9,
+                                      rb_id_t                  *const defaultDRB,
+                                      struct NR_CellGroupConfig__rlc_BearerToAddModList *rlc_bearer2add_list,
+                                      rnti_t reestablish_rnti) {
+
   int rnti = ctxt_pP->rnti;
   int i;
 
@@ -1079,10 +1090,15 @@ boolean_t nr_rrc_pdcp_config_asn1_req(
 
   if (drb2add_list != NULL) {
     for (i = 0; i < drb2add_list->list.count; i++) {
-      add_drb(ctxt_pP->enb_flag, rnti, drb2add_list->list.array[i],
+      add_drb(ctxt_pP->enb_flag,
+              rnti,
+              reestablish_rnti,
+              drb2add_list->list.array[i],
               rlc_bearer2add_list->list.array[i]->rlc_Config,
-              security_modeP & 0x0f, (security_modeP >> 4) & 0x0f,
-              kUPenc, kUPint);
+              security_modeP & 0x0f,
+              (security_modeP >> 4) & 0x0f,
+              kUPenc,
+              kUPint);
     }
   }
 
@@ -1189,19 +1205,19 @@ void nr_DRB_preconfiguration(uint16_t crnti)
     PROTOCOL_CTXT_SET_BY_MODULE_ID(&ctxt, 0, ENB_FLAG_NO, crnti, 0, 0,0);
   }
 
-  nr_rrc_pdcp_config_asn1_req(
-    &ctxt,
-    (NR_SRB_ToAddModList_t *) NULL,
-    rbconfig->drb_ToAddModList ,
-    rbconfig->drb_ToReleaseList,
-    0,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    Rlc_Bearer_ToAdd_list);
+  nr_rrc_pdcp_config_asn1_req(&ctxt,
+                              (NR_SRB_ToAddModList_t *) NULL,
+                              rbconfig->drb_ToAddModList,
+                              rbconfig->drb_ToReleaseList,
+                              0,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              Rlc_Bearer_ToAdd_list,
+                              0);
 
   nr_rrc_rlc_config_asn1_req (&ctxt,
       (NR_SRB_ToAddModList_t *) NULL,

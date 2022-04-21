@@ -385,7 +385,7 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc,struct rrc_gNB_ue_context_s *ue_context_
 
   nr_rrc_pdcp_config_asn1_req(&ctxt,
                               get_softmodem_params()->sa ? ue_context_p->ue_context.rb_config->srb_ToAddModList : (NR_SRB_ToAddModList_t *) NULL,
-                              ue_context_p->ue_context.rb_config->drb_ToAddModList ,
+                              ue_context_p->ue_context.rb_config->drb_ToAddModList,
                               ue_context_p->ue_context.rb_config->drb_ToReleaseList,
                               (ue_context_p->ue_context.integrity_algorithm << 4) | ue_context_p->ue_context.ciphering_algorithm,
                               NULL,          /* kRRCenc - unused */
@@ -394,7 +394,8 @@ void rrc_add_nsa_user(gNB_RRC_INST *rrc,struct rrc_gNB_ue_context_s *ue_context_
                               kUPint,        /* kUPint */
                               NULL,
                               NULL,
-                              ue_context_p->ue_context.secondaryCellGroup->rlc_BearerToAddModList);
+                              ue_context_p->ue_context.secondaryCellGroup->rlc_BearerToAddModList,
+                              0);
 
   nr_rrc_rlc_config_asn1_req(&ctxt,
                              get_softmodem_params()->sa ? ue_context_p->ue_context.rb_config->srb_ToAddModList : (NR_SRB_ToAddModList_t *) NULL,

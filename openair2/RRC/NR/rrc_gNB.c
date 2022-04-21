@@ -334,18 +334,19 @@ void apply_macrlc_config_reest(gNB_RRC_INST *rrc,
 void apply_pdcp_config(rrc_gNB_ue_context_t         *const ue_context_pP,
                        const protocol_ctxt_t        *const ctxt_pP ) {
 
-      nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-                                  ue_context_pP->ue_context.SRB_configList,
-                                  NULL,
-                                  NULL,
-                                  0,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+  nr_rrc_pdcp_config_asn1_req(ctxt_pP,
+                              ue_context_pP->ue_context.SRB_configList,
+                              NULL,
+                              NULL,
+                              0,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL,
+                              0);
 
 }
 
@@ -391,17 +392,18 @@ rrc_gNB_generate_RRCSetup(
       // create an ITTI message
       /* TODO: F1 IDs ar missing in RRC */
       nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-				  ue_context_pP->ue_context.SRB_configList,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL);
+                                  ue_context_pP->ue_context.SRB_configList,
+                                  NULL,
+                                  NULL,
+                                  0,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  NULL,
+                                  0);
       message_p = itti_alloc_new_message (TASK_RRC_GNB, 0, F1AP_DL_RRC_MESSAGE);
       F1AP_DL_RRC_MESSAGE (message_p).rrc_container        =  (uint8_t *)ue_p->Srb0.Tx_buffer.Payload;
       F1AP_DL_RRC_MESSAGE (message_p).rrc_container_length = ue_p->Srb0.Tx_buffer.payload_size;
@@ -1495,19 +1497,35 @@ rrc_gNB_process_RRCReconfigurationComplete(
 #ifndef ITTI_SIM
   LOG_D(NR_RRC,"Configuring PDCP DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
 
+  rnti_t reestablish_rnti = 0;
+  if (DRB_configList && DRB_configList->list.array[0]->reestablishPDCP && *DRB_configList->list.array[0]->reestablishPDCP == NR_DRB_ToAddMod__reestablishPDCP_true) {
+    for (int i = 0; i < MAX_MOBILES_PER_ENB; i++) {
+      if (reestablish_rnti_map[i][0] == ctxt_pP->rnti) {
+        reestablish_rnti = reestablish_rnti_map[i][1];
+        LOG_D(NR_RRC, "reestablish_rnti_map[%d] new 0x%04x, old 0x%04x\n", i, reestablish_rnti_map[i][0], reestablish_rnti_map[i][1]);
+
+        // clear current C-RNTI from map
+        reestablish_rnti_map[i][0] = 0;
+        reestablish_rnti_map[i][1] = 0;
+        break;
+      }
+    }
+  }
+
   nr_rrc_pdcp_config_asn1_req(ctxt_pP,
                               SRB_configList, // NULL,
                               DRB_configList,
                               DRB_Release_configList2,
-                              (ue_context_pP->ue_context.integrity_algorithm << 4)
-                              | ue_context_pP->ue_context.ciphering_algorithm,
+                              (ue_context_pP->ue_context.integrity_algorithm << 4) | ue_context_pP->ue_context.ciphering_algorithm,
                               kRRCenc,
                               kRRCint,
                               kUPenc,
                               kUPint,
                               NULL,
                               NULL,
-                              get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+                              get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL,
+                              reestablish_rnti);
+
   /* Refresh SRBs/DRBs */
   if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
     LOG_D(NR_RRC,"Configuring RLC DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
@@ -1711,18 +1729,19 @@ rrc_gNB_generate_RRCReestablishment(
                           ue_context_pP->ue_context.kgnb,
                           &kRRCint);
 
-    nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-                                  ue_context_pP->ue_context.SRB_configList,
-                                  NULL,
-                                  NULL,
-                                  0,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+  nr_rrc_pdcp_config_asn1_req(ctxt_pP,
+                              ue_context_pP->ue_context.SRB_configList,
+                              NULL,
+                              NULL,
+                              0,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL,
+                              0);
     LOG_I(NR_RRC,"Set pdcp security rnti %x nca %ld nia %d in Reestablishment\n",ue_context->rnti,ue_context_pP->ue_context.ciphering_algorithm,ue_context_pP->ue_context.integrity_algorithm);
     pdcp_config_set_security(
         ctxt_pP,
@@ -2950,9 +2969,6 @@ rrc_gNB_decode_dcch(
                     ue_context_p = rrc_gNB_get_ue_context(
                                      RC.nrrrc[ctxt_pP->module_id],
                                      reestablish_rnti);
-                    // clear currentC-RNTI from map
-                    reestablish_rnti_map[i][0] = 0;
-                    reestablish_rnti_map[i][1] = 0;
                     LOG_D(NR_RRC, "reestablish_rnti_map[%d] [0] %x, [1] %x\n",
                           i, reestablish_rnti_map[i][0], reestablish_rnti_map[i][1]);
                     break;
