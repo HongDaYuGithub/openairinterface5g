@@ -36,7 +36,7 @@
 
 void set_cset_offset(uint16_t);
 
-void mac_top_init_gNB(void);
+void mac_top_init_gNB(ngran_node_t node_type);
 
 void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_sched_ctrl_t *sched_ctrl);
 

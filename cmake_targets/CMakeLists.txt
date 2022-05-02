@@ -1939,6 +1939,8 @@ set (MAC_NR_SRC
   ${NR_GNB_MAC_DIR}/gNB_scheduler_srs.c
   ${NR_GNB_MAC_DIR}/gNB_scheduler_RA.c
   ${NR_GNB_MAC_DIR}/mac_rrc_dl_handler.c
+  ${NR_GNB_MAC_DIR}/mac_rrc_ul_direct.c
+  ${NR_GNB_MAC_DIR}/mac_rrc_ul_f1ap.c
  )
 
 
