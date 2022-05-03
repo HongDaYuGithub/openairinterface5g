@@ -173,8 +173,6 @@ Options:
   Tell cmake to use the Ninja build system. Without, will generate make files
 --sanitize-address | -fsanitize=address
    Enable the address sanitizer on all targets
---ittiSIM
-  Makes the itti simulator
 -h | --help
    Print this help
 
@@ -455,11 +453,6 @@ function main() {
             grep -sq "Ubuntu 18.04" /etc/os-release && echo_error "Bug in OS with this option, see CMakeLists.txt"
             CMAKE_CMD="$CMAKE_CMD -DSANITIZE_ADDRESS=True"
             shift;;
-        --ittiSIM)
-            ittiSIM=1
-            CMAKE_CMD="$CMAKE_CMD -DITTI_SIM=True"
-            echo_info "Will compile itti simulator"
-            shift;;
         -h | --help)
             print_help
             exit 1;;
@@ -612,9 +605,6 @@ function main() {
   fi
   if [ "$nrUE" = 1 ] ; then
       execlist="$execlist nr-uesoftmodem"
-  fi
-  if [ "$ittiSIM" = "1" ] ; then
-      execlist="$execlist nr-ittisim"
   fi
 
   if [[ "$execlist" == "" && "$SIMUS_PHY" != "1" ]]; then
