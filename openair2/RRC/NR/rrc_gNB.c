@@ -1764,7 +1764,7 @@ rrc_gNB_generate_RRCReestablishment(
 
 //-----------------------------------------------------------------------------
 void
-rrc_gNB_process_RRCConnectionReestablishmentComplete(
+rrc_gNB_process_RRCReestablishmentComplete(
   const protocol_ctxt_t *const ctxt_pP,
   const rnti_t reestablish_rnti,
   rrc_gNB_ue_context_t         *ue_context_pP,
@@ -1773,7 +1773,7 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
 //-----------------------------------------------------------------------------
 {
   LOG_I(NR_RRC,
-        PROTOCOL_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel UL-DCCH, processing NR_RRCConnectionReestablishmentComplete from UE (SRB1 Active)\n",
+        PROTOCOL_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel UL-DCCH, processing NR_RRCReestablishmentComplete from UE (SRB1 Active)\n",
         PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
 
   NR_DRB_ToAddModList_t                 *DRB_configList = ue_context_pP->ue_context.DRB_configList;
@@ -2977,7 +2977,7 @@ rrc_gNB_decode_dcch(
 
             case NR_UL_DCCH_MessageType__c1_PR_rrcReestablishmentComplete:
               LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)Rx_sdu,sdu_sizeP,
-                          "[MSG] NR_RRC Connection Reestablishment Complete\n");
+                          "[MSG] NR RRC Reestablishment Complete\n");
               LOG_I(NR_RRC,
                     PROTOCOL_RRC_CTXT_UE_FMT" RLC RB %02d --- RLC_DATA_IND %d bytes "
                     "(rrcConnectionReestablishmentComplete) ---> RRC_gNB\n",
@@ -3002,7 +3002,7 @@ rrc_gNB_decode_dcch(
 
                 if (!ue_context_p) {
                   LOG_E(NR_RRC,
-                        PROTOCOL_NR_RRC_CTXT_UE_FMT" NR_RRCConnectionReestablishmentComplete without UE context, falt\n",
+                        PROTOCOL_NR_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE context, falt\n",
                         PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
                   break;
                 }
@@ -3014,7 +3014,7 @@ rrc_gNB_decode_dcch(
 
                 if(UE_id == -1) {
                   LOG_E(NR_RRC,
-                        PROTOCOL_RRC_CTXT_UE_FMT" NR_RRCConnectionReestablishmentComplete without UE_id(MAC) rnti %x, fault\n",
+                        PROTOCOL_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE_id(MAC) rnti %x, fault\n",
                         PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),ctxt_pP->rnti);
                   break;
                 }
@@ -3024,7 +3024,7 @@ rrc_gNB_decode_dcch(
 
                 if (ul_dcch_msg->message.choice.c1->choice.rrcReestablishmentComplete->criticalExtensions.present ==
                     NR_RRCReestablishmentComplete__criticalExtensions_PR_rrcReestablishmentComplete) {
-                  rrc_gNB_process_RRCConnectionReestablishmentComplete(ctxt_pP, reestablish_rnti, ue_context_p,
+                  rrc_gNB_process_RRCReestablishmentComplete(ctxt_pP, reestablish_rnti, ue_context_p,
                       ul_dcch_msg->message.choice.c1->choice.rrcReestablishmentComplete->rrc_TransactionIdentifier);
                   mac_remove_nr_ue(ctxt_pP->module_id, reestablish_rnti);
                 }
