@@ -108,18 +108,16 @@
 
 extern RAN_CONTEXT_t RC;
 
-static inline uint64_t bitStr_to_uint64(BIT_STRING_t *asn);
+extern void pdcp_config_set_security(const protocol_ctxt_t *const ctxt_pP,
+                                     pdcp_t *const pdcp_pP,
+                                     const rb_id_t rb_idP,
+                                     const uint16_t lc_idP,
+                                     const uint8_t security_modeP,
+                                     uint8_t *const kRRCenc,
+                                     uint8_t *const kRRCint,
+                                     uint8_t *const  kUPenc);
 
-extern void pdcp_config_set_security(
-  const protocol_ctxt_t *const  ctxt_pP,
-  pdcp_t          *const pdcp_pP,
-  const rb_id_t         rb_idP,
-  const uint16_t        lc_idP,
-  const uint8_t         security_modeP,
-  uint8_t         *const kRRCenc,
-  uint8_t         *const kRRCint,
-  uint8_t         *const  kUPenc
-);
+static inline uint64_t bitStr_to_uint64(BIT_STRING_t *asn);
 
 mui_t                               rrc_gNB_mui = 0;
 uint8_t first_rrcreconfiguration = 0;
@@ -317,6 +315,7 @@ void apply_macrlc_config_reest(gNB_RRC_INST *rrc,
                              rrc->configuration.pusch_AntennaPorts,
                              rrc->configuration.sib1_tda,
                              rrc->configuration.minRXTXTIME,
+                             NULL,
                              NULL,
                              NULL,
                              0,
@@ -524,6 +523,7 @@ rrc_gNB_generate_RRCSetup_for_RRCReestablishmentRequest(
         PROTOCOL_NR_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel DL-CCCH, Generating RRCSetup (bytes %d)\n",
         PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),
         ue_p->Srb0.Tx_buffer.payload_size);
+
   // activate release timer, if RRCSetupComplete not received after 100 frames, remove UE
   ue_context_pP->ue_context.ue_release_timer = 1;
   // remove UE after 10 frames after RRCConnectionRelease is triggered
@@ -651,7 +651,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t                       buffer[RRC_BUF_SIZE];
+  uint8_t                       buffer[RRC_BUF_SIZE] = {0};
   uint16_t                      size;
   /*NR_SRB_ToAddModList_t        **SRB_configList2 = NULL;
   NR_SRB_ToAddModList_t        *SRB_configList  = ue_context_pP->ue_context.SRB_configList;
@@ -763,8 +763,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
 
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
-  memset(buffer, 0, sizeof(buffer));
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                 xid,
                                 NULL, //*SRB_configList2,
                                 NULL, //*DRB_configList,
@@ -899,7 +898,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE];
+  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int                            pdu_sessions_done = 0;
@@ -1166,7 +1165,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE];
+  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int i, j;
@@ -1271,8 +1270,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
     dedicatedNAS_MessageList = NULL;
   }
 
-  memset(buffer, 0, sizeof(buffer));
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                 xid,
                                 NULL,
                                 DRB_configList2,
@@ -1349,7 +1347,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
     uint8_t                 *nas_buffer)
 //-----------------------------------------------------------------------------
 {
-  uint8_t                             buffer[RRC_BUF_SIZE];
+  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
   int                                 i;
   uint16_t                            size  = 0;
   NR_DRB_ToReleaseList_t             **DRB_Release_configList2 = NULL;
@@ -1386,8 +1384,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
     LOG_W(NR_RRC,"dedlicated NAS list is empty\n");
   }
 
-  memset(buffer, 0, sizeof(buffer));
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer), xid,
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE, xid,
                                NULL,
                                NULL,
                                *DRB_Release_configList2,
@@ -1649,7 +1646,7 @@ rrc_gNB_generate_RRCReestablishment(
   NR_SRB_ToAddModList_t      **SRB_configList;
   gNB_RRC_UE_t               *ue_context = NULL;
   module_id_t                module_id = ctxt_pP->module_id;
-  uint8_t                    buffer[RRC_BUF_SIZE];
+  uint8_t                    buffer[RRC_BUF_SIZE] = {0};
   uint16_t                   size  = 0;
   gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
@@ -1657,7 +1654,6 @@ rrc_gNB_generate_RRCReestablishment(
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
-  memset(buffer, 0, RRC_BUF_SIZE);
   size = do_RRCReestablishment(ctxt_pP,
       ue_context_pP,
       CC_id,
@@ -1667,8 +1663,7 @@ rrc_gNB_generate_RRCReestablishment(
       rrc_gNB_get_next_transaction_identifier(module_id),
       SRB_configList,
       masterCellGroup_from_DU,
-      scc,
-      &rrc_instance_p->carrier);
+      scc,&rrc_instance_p->carrier);
 
   /* Configure SRB1 for UE */
   if (*SRB_configList != NULL) {
@@ -1683,10 +1678,9 @@ rrc_gNB_generate_RRCReestablishment(
       // rrc_mac_config_req_eNB
     }
   }  // if (*SRB_configList != NULL)
-    
-    LOG_I(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel DL-DCCH, Generating NR_RRCReestablishment (bytes %d)\n",
-          PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),
-          size);
+
+  LOG_I(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel DL-DCCH, Generating NR_RRCReestablishment (bytes %d)\n",
+        PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP), size);
 #if(0)
     /* TODO : It may be needed if gNB goes into full stack working. */
     UE = find_nr_UE(module_id, rnti);
@@ -1765,6 +1759,7 @@ rrc_gNB_generate_RRCReestablishment(
                 buffer,
                 PDCP_TRANSMISSION_MODE_CONTROL);
 #endif
+
 }
 
 //-----------------------------------------------------------------------------
@@ -1789,7 +1784,7 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
   NR_DRB_ToAddMod_t                     *DRB_config      = NULL;
   //NR_SDAP_Config_t                      *sdap_config     = NULL;
   int i = 0;
-  uint8_t                             buffer[RRC_BUF_SIZE];
+  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
   uint16_t                            size;
 
   uint8_t next_xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
@@ -1948,11 +1943,7 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
 
   if (AMF_MODE_ENABLED) {
-    uint8_t send_security_mode_command = false;
-    nr_rrc_pdcp_config_security(
-      ctxt_pP,
-      ue_context_pP,
-      send_security_mode_command ? 0 : 1);
+    nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 0);
     LOG_D(NR_RRC, "set security successfully \n");
   }
 
@@ -1967,16 +1958,15 @@ rrc_gNB_process_RRCConnectionReestablishmentComplete(
           i, ue_context_pP->ue_context.pduSession[i].status, "PDU_SESSION_STATUS_DONE");
   }
 
-  memset(buffer, 0, RRC_BUF_SIZE);
-
+  gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
-  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup);
+  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb);
   for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
     cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = CALLOC(1, sizeof(*cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC));
     *cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = NR_RLC_BearerConfig__reestablishRLC_true;
   }
 
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                next_xid,
                                *SRB_configList2,
                                 DRB_configList,
@@ -2462,6 +2452,27 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
           LOG_I(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT"CALLING RLC CONFIG SRB1 (rbid %d)\n",
                 PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),
                 Idx);
+          // nr_rrc_pdcp_config_asn1_req(ctxt_pP,
+          //                         ue_context_p->ue_context.SRB_configList,
+          //                         NULL,
+          //                         NULL,
+          //                         0xff,
+          //                         NULL,
+          //                         NULL,
+          //                         NULL,
+          //                         NULL,
+          //                         NULL,
+          //                         NULL,
+          //                         NULL);
+
+          // if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
+            // nr_rrc_rlc_config_asn1_req(ctxt_pP,
+            //                         ue_context_p->ue_context.SRB_configList,
+            //                         NULL,
+            //                         NULL,
+            //                         NULL,
+            //                         NULL);
+          // }
         }
         break;
 
@@ -2619,13 +2630,27 @@ rrc_gNB_decode_dcch(
             rrc_gNB_send_NGAP_PDUSESSION_RELEASE_RESPONSE(ctxt_pP, ue_context_p, xid);
           } else if (ue_context_p->ue_context.established_pdu_sessions_flag != 1) {
             if(ue_context_p->ue_context.reestablishment_xid < 0) {
-              if (ue_context_p->ue_context.setup_pdu_sessions > 0) {
+              if (ue_context_p->ue_context.nb_of_pdusessions > 0) {
                 rrc_gNB_send_NGAP_PDUSESSION_SETUP_RESP(ctxt_pP,
                                                         ue_context_p,
                                                         ul_dcch_msg->message.choice.c1->choice.rrcReconfigurationComplete->rrc_TransactionIdentifier);
+                ue_context_p->ue_context.nb_of_pdusessions = 0;
               }
             } else {
               ue_context_p->ue_context.reestablishment_xid = -1;
+            }
+          }
+
+          if (ue_context_p->ue_context.nb_of_modify_pdusessions > 0) {
+            rrc_gNB_send_NGAP_PDUSESSION_MODIFY_RESP(ctxt_pP,
+                                                     ue_context_p,
+                                                     ul_dcch_msg->message.choice.c1->choice.rrcReconfigurationComplete->rrc_TransactionIdentifier);
+            ue_context_p->ue_context.nb_of_modify_pdusessions = 0;
+            ue_context_p->ue_context.nb_of_failed_pdusessions = 0;
+            memset(ue_context_p->ue_context.modify_pdusession, 0, sizeof(ue_context_p->ue_context.modify_pdusession));
+
+            for(int i = 0; i < NR_NB_RB_MAX; i++) {
+              ue_context_p->ue_context.modify_pdusession[i].xid = -1;
             }
           }
         }
@@ -4516,10 +4541,8 @@ rrc_gNB_generate_RRCRelease(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t buffer[RRC_BUF_SIZE];
+  uint8_t buffer[RRC_BUF_SIZE] = {0};
   uint16_t size = 0;
-
-  memset(buffer, 0, sizeof(buffer));
 
   size = do_NR_RRCRelease(buffer, sizeof(buffer),
                           rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id));

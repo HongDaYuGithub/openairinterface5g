@@ -1916,7 +1916,7 @@ void nr_sr_reporting(gNB_MAC_INST *nrmac, frame_t SFN, sub_frame_t slot)
       pucch_Config = UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup;
     }
     else continue;
-    if (!pucch_Config->schedulingRequestResourceToAddModList) 
+    if (!pucch_Config->schedulingRequestResourceToAddModList)
         continue;
 
     AssertFatal(pucch_Config->schedulingRequestResourceToAddModList->list.count>0,"NO SR configuration available");

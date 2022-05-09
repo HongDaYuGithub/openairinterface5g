@@ -2776,18 +2776,19 @@ uint8_t do_RRCReestablishmentRequest(uint8_t Mod_id, uint8_t *buffer, uint16_t c
 
 //------------------------------------------------------------------------------
 uint8_t
-do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
-                      rrc_gNB_ue_context_t      *const ue_context_pP,
-                      int                              CC_id,
-                      uint8_t                   *const buffer,
-                      //const uint8_t                    transmission_mode,
-                      const uint8_t                    Transaction_id,
-                      NR_SRB_ToAddModList_t               **SRB_configList,
-                      OCTET_STRING_t               *masterCellGroup_from_DU,
-                      NR_ServingCellConfigCommon_t *scc,
-                      rrc_gNB_carrier_data_t *carrier)
-//------------------------------------------------------------------------------
-{
+do_RRCReestablishment(
+const protocol_ctxt_t     *const ctxt_pP,
+rrc_gNB_ue_context_t      *const ue_context_pP,
+int                              CC_id,
+uint8_t                   *const buffer,
+size_t                           buffer_size,
+//const uint8_t                    transmission_mode,
+const uint8_t                    Transaction_id,
+NR_SRB_ToAddModList_t               **SRB_configList,
+OCTET_STRING_t               *masterCellGroup_from_DU,
+NR_ServingCellConfigCommon_t *scc,
+rrc_gNB_carrier_data_t *carrier
+) {
     asn_enc_rval_t enc_rval;
     //long *logicalchannelgroup = NULL;
     struct NR_SRB_ToAddMod *SRB1_config = NULL;
@@ -2857,8 +2858,8 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
 		  &asn_DEF_NR_CellGroupConfig,   //might be added prefix later
 		  (void **)&cellGroupConfig,
 		  (uint8_t *)masterCellGroup_from_DU->buf,
-		  masterCellGroup_from_DU->size, 0, 0); 
-      
+		  masterCellGroup_from_DU->size, 0, 0);
+
       xer_fprint(stdout, &asn_DEF_NR_CellGroupConfig, (const void*)cellGroupConfig);
     }
     else {
@@ -2870,7 +2871,7 @@ do_RRCReestablishment(const protocol_ctxt_t     *const ctxt_pP,
 				       (void *)cellGroupConfig,
 				       masterCellGroup_buf,
 				       1000);
-      
+
       if(enc_rval.encoded == -1) {
         LOG_E(NR_RRC, "ASN1 message CellGroupConfig encoding failed (%s, %lu)!\n",
 	      enc_rval.failed_type->name, enc_rval.encoded);

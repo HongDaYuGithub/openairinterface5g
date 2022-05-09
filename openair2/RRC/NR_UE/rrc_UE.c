@@ -2726,7 +2726,7 @@ nr_rrc_ue_process_ueCapabilityEnquiry(
 }
 
 //-----------------------------------------------------------------------------
-void rrc_ue_generate_RRCReestablishmentRequest( const protocol_ctxt_t *const ctxt_pP, const uint8_t gNB_index ) 
+void rrc_ue_generate_RRCReestablishmentRequest( const protocol_ctxt_t *const ctxt_pP, const uint8_t gNB_index )
 {
   NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size =
     do_RRCReestablishmentRequest(
