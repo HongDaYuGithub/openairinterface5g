@@ -72,6 +72,7 @@ typedef struct notifiedFIFO_s {
   notifiedFIFO_elt_t *inF;
   pthread_mutex_t lockF;
   pthread_cond_t  notifF;
+  bool abortFlag; // if set, the FIFO always returns NULL -> abort condition
 } notifiedFIFO_t;
 
 // You can use this allocator or use any piece of memory
@@ -107,6 +108,7 @@ static inline void delNotifiedFIFO_elt(notifiedFIFO_elt_t *elt) {
 static inline void initNotifiedFIFO_nothreadSafe(notifiedFIFO_t *nf) {
   nf->inF=NULL;
   nf->outF=NULL;
+  nf->abortFlag = false;
 }
 static inline void initNotifiedFIFO(notifiedFIFO_t *nf) {
   mutexinit(nf->lockF);
@@ -152,9 +154,9 @@ static inline  notifiedFIFO_elt_t *pullNotifiedFIFO_nothreadSafe(notifiedFIFO_t 
 
 static inline  notifiedFIFO_elt_t *pullNotifiedFIFO(notifiedFIFO_t *nf) {
   mutexlock(nf->lockF);
-  notifiedFIFO_elt_t *ret;
+  notifiedFIFO_elt_t *ret = NULL;
 
-  while((ret=pullNotifiedFIFO_nothreadSafe(nf)) == NULL)
+  while((ret=pullNotifiedFIFO_nothreadSafe(nf)) == NULL && !nf->abortFlag)
     condwait(nf->notifF, nf->lockF);
 
   mutexunlock(nf->lockF);
@@ -166,6 +168,11 @@ static inline  notifiedFIFO_elt_t *pollNotifiedFIFO(notifiedFIFO_t *nf) {
 
   if (tmp != 0 )
     return NULL;
+
+  if (nf->abortFlag) {
+    mutexunlock(nf->lockF);
+    return NULL;
+  }
 
   notifiedFIFO_elt_t *ret=pullNotifiedFIFO_nothreadSafe(nf);
   mutexunlock(nf->lockF);
@@ -223,7 +230,7 @@ struct one_thread {
 };
 
 typedef struct thread_pool {
-  int activated;
+  bool activated;
   bool measurePerf;
   int traceFd;
   int dummyTraceFd;
@@ -256,6 +263,8 @@ static inline void pushTpool(tpool_t *t, notifiedFIFO_elt_t *msg) {
 
 static inline notifiedFIFO_elt_t *pullTpool(notifiedFIFO_t *responseFifo, tpool_t *t) {
   notifiedFIFO_elt_t *msg= pullNotifiedFIFO(responseFifo);
+  if (msg == NULL)
+    return NULL;
   AssertFatal(t->traceFd, "Thread pool used while not initialized");
   if (t->measurePerf)
     msg->returnTime=rdtsc_oai();
@@ -312,6 +321,49 @@ static inline int abortTpoolJob(tpool_t *t, uint64_t key) {
   }
 
   mutexunlock(nf->lockF);
+  return nbRemoved;
+}
+static inline int abortTpool(tpool_t *t) {
+  int nbRemoved=0;
+  /* disables threading: if a message comes in now, we cannot have a race below
+   * as each thread will simply execute the message itself */
+  t->activated = false;
+  notifiedFIFO_t *nf=&t->incomingFifo;
+  mutexlock(nf->lockF);
+  nf->abortFlag = true;
+  notifiedFIFO_elt_t **start=&nf->outF;
+
+  /* mark threads to abort them */
+  struct one_thread *ptr=t->allthreads;
+  while(ptr!=NULL) {
+    ptr->abortFlag=true;
+    nbRemoved++;
+    ptr=ptr->next;
+  }
+
+  /* clear FIFOs */
+  while(*start!=NULL) {
+    notifiedFIFO_elt_t **request=start;
+    *start=(*start)->next;
+    delNotifiedFIFO_elt(*request);
+    *request = NULL;
+    nbRemoved++;
+  }
+
+  if (t->incomingFifo.outF==NULL)
+    t->incomingFifo.inF=NULL;
+
+  condbroadcast(t->incomingFifo.notifF);
+  mutexunlock(nf->lockF);
+
+  /* join threads that are still runing */
+  ptr = t->allthreads;
+  while (ptr != NULL) {
+    void *rc;
+    pthread_join(ptr->threadID, &rc);
+    ptr = ptr->next;
+  }
+
   return nbRemoved;
 }
 void initNamedTpool(char *params,tpool_t *pool, bool performanceMeas, char *name);

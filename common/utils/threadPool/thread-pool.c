@@ -48,8 +48,13 @@ void displayList(notifiedFIFO_t *nf) {
 static inline  notifiedFIFO_elt_t *pullNotifiedFifoRemember( notifiedFIFO_t *nf, struct one_thread *thr) {
   mutexlock(nf->lockF);
 
-  while(!nf->outF)
+  while(!nf->outF && !thr->abortFlag)
     condwait(nf->notifF, nf->lockF);
+
+  if (thr->abortFlag) {
+    mutexunlock(nf->lockF);
+    return NULL;
+  }
 
   notifiedFIFO_elt_t *ret=nf->outF;
   nf->outF=nf->outF->next;
@@ -71,6 +76,10 @@ void *one_thread(void *arg) {
   // Infinite loop to process requests
   do {
     notifiedFIFO_elt_t *elt=pullNotifiedFifoRemember(&tp->incomingFifo, myThread);
+    if (elt == NULL) {
+      AssertFatal(myThread->abortFlag, "pullNotifiedFifoRemember() returned NULL although thread not aborted\n");
+      break;
+    }
 
     if (tp->measurePerf) elt->startProcessingTime=rdtsc_oai();
 
@@ -82,14 +91,17 @@ void *one_thread(void *arg) {
       // Check if the job is still alive, else it has been aborted
       mutexlock(tp->incomingFifo.lockF);
 
-      if (myThread->abortFlag)
+      if (myThread->abortFlag) {
         delNotifiedFIFO_elt(elt);
-      else
+        break;
+      } else {
         pushNotifiedFIFO(elt->reponseFifo, elt);
+      }
       myThread->runningOnKey=-1;
       mutexunlock(tp->incomingFifo.lockF);
     }
-  } while (true);
+  } while (!myThread->abortFlag);
+  return NULL;
 }
 
 void initNamedTpool(char *params,tpool_t *pool, bool performanceMeas, char *name) {
@@ -137,6 +149,7 @@ void initNamedTpool(char *params,tpool_t *pool, bool performanceMeas, char *name
         pool->allthreads->coreID=atoi(curptr);
         pool->allthreads->id=pool->nbThreads;
         pool->allthreads->pool=pool;
+        pool->allthreads->abortFlag = false;
         //Configure the thread scheduler policy for Linux
         // set the thread name for debugging
         sprintf(pool->allthreads->name,"%s%d_%d",tname,pool->nbThreads,pool->allthreads->coreID);
