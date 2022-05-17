@@ -619,6 +619,8 @@ void init_fep_thread(RU_t *ru,
 extern void kill_fep_thread(RU_t *ru)
 {
   RU_proc_t *proc = &ru->proc;
+  if (proc->pthread_fep == 0)
+    return;
   pthread_mutex_lock( &proc->mutex_fep );
   proc->instance_cnt_fep         = 0;
   pthread_cond_signal(&proc->cond_fep);
@@ -633,6 +635,8 @@ extern void kill_fep_thread(RU_t *ru)
 extern void kill_feptx_thread(RU_t *ru)
 {
   RU_proc_t *proc = &ru->proc;
+  if (proc->pthread_feptx == 0)
+    return;
   pthread_mutex_lock( &proc->mutex_feptx );
   proc->instance_cnt_feptx         = 0;
   pthread_cond_signal(&proc->cond_feptx);
