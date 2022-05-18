@@ -86,6 +86,7 @@
 extern uint16_t sf_ahead;
 int macrlc_has_f1 = 0;
 extern ngran_node_t node_type;
+int cu_type;
 
 extern int config_check_band_frequencies(int ind, int16_t band, uint64_t downlink_frequency,
                                          int32_t uplink_frequency_offset, uint32_t  frame_type);
@@ -1157,20 +1158,12 @@ void RCconfig_NRRRC(MessageDef *msg_p, uint32_t i, gNB_RRC_INST *rrc) {
       rrc->eth_params_s.my_portd                 = *(GNBParamList.paramarray[i][GNB_LOCAL_S_PORTD_IDX].uptr);
       rrc->eth_params_s.remote_portd             = *(GNBParamList.paramarray[i][GNB_REMOTE_S_PORTD_IDX].uptr);
       rrc->eth_params_s.transp_preference        = ETH_UDP_MODE;
-      rrc->node_type                             = ngran_gNB_CU;
       rrc->sctp_in_streams                       = (uint16_t)*(SCTPParams[GNB_SCTP_INSTREAMS_IDX].uptr);
       rrc->sctp_out_streams                      = (uint16_t)*(SCTPParams[GNB_SCTP_OUTSTREAMS_IDX].uptr);
-    } else {
-      // set to ngran_gNB for now, it will get set to ngran_gNB_DU if macrlc entity which uses F1 is present
-      // Note: we will have to handle the case of ngran_ng_gNB_DU
-      if (macrlc_has_f1 == 0) {
-        rrc->node_type = ngran_gNB;
-        LOG_I(NR_RRC,"Setting node_type to ngran_gNB\n");
-      } else {
-        rrc->node_type = ngran_gNB_DU;
-        LOG_I(NR_RRC,"Setting node_type to ngran_gNB_DU\n");
-      }
     }
+
+    rrc->node_type = node_type;
+    rrc->cu_type = cu_type;
 
     rrc->nr_cellid        = (uint64_t)*(GNBParamList.paramarray[i][GNB_NRCELLID_IDX].u64ptr);
 
@@ -1826,6 +1819,54 @@ int RCconfig_NR_X2(MessageDef *msg_p, uint32_t i) {
   return 0;
 }
 
+int RCconfig_NR_CU_E1(MessageDef *msg_p, uint32_t i) {
+  paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
+  paramdef_t GNBParams[]  = GNBPARAMS_DESC;
+  paramdef_t GNBE1Params[] = GNBE1PARAMS_DESC;
+  paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST,NULL,0};
+  paramlist_def_t GNBE1ParamList = {GNB_CONFIG_STRING_E1_PARAMETERS, NULL, 0};
+  config_get(GNBSParams, sizeof(GNBSParams)/sizeof(paramdef_t), NULL);
+  int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
+  AssertFatal (i < num_gnbs,
+               "Failed to parse config file no %uth element in %s \n",i, GNB_CONFIG_STRING_ACTIVE_GNBS);
+
+  if (num_gnbs > 0) {
+    config_getlist(&GNBParamList, GNBParams, sizeof(GNBParams)/sizeof(paramdef_t), NULL);
+    AssertFatal(GNBParamList.paramarray[i][GNB_GNB_ID_IDX].uptr != NULL,
+                "gNB id %u is not defined in configuration file\n",i);
+    config_getlist(&GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), NULL);
+    e1ap_setup_req_t *e1Setup = &E1AP_SETUP_REQ(msg_p);
+    e1setup->gNB_cu_up_id = *(GNBParamList.paramarray[0][GNB_GNB_ID_IDX].uptr);
+
+    paramdef_t PLMNParams[] = GNBPLMNPARAMS_DESC;
+    paramlist_def_t PLMNParamList = {GNB_CONFIG_STRING_PLMN_LIST, NULL, 0};
+    /* map parameter checking array instances to parameter definition array instances */
+    checkedparam_t config_check_PLMNParams [] = PLMNPARAMS_CHECK;
+
+    for (int I = 0; I < sizeof(PLMNParams) / sizeof(paramdef_t); ++I)
+      PLMNParams[I].chkPptr = &(config_check_PLMNParams[I]);
+
+    config_getlist(&PLMNParamList, PLMNParams, sizeof(PLMNParams)/sizeof(paramdef_t), aprefix);
+    int numPLMNs = PLMNParamList.numelt;
+    e1Setup->supported_plmns = numPLMNs;
+
+    for (int I = 0; I < numPLMNs; I++) {
+      e1Setup->plmns[I].mcc = *PLMNParamList.paramarray[I][GNB_MOBILE_COUNTRY_CODE_IDX].uptr;
+      e1Setup->plmns[I].mnc = *PLMNParamList.paramarray[I][GNB_MOBILE_NETWORK_CODE_IDX].uptr;
+      e1Setup->plmns[I].mnc = *PLMNParamList.paramarray[I][GNB_MNC_DIGIT_LENGTH].u8ptr;
+    }
+
+    strcpy(e1Setup->CUCP_e1_ip_address.ipv4_address, GNBE1PARAMList.paramarray[0][GNB_CONFIG_E1_IPV4_ADDRESS_CUCP].strptr);
+    e1Setup->port_cucp = *GNBE1PARAMList.paramarray[0][GNB_CONFIG_E1_PORT_CUCP].uptr;
+    strcpy(e1Setup->CUUP_e1_ip_address.ipv4_address, GNBE1PARAMList.paramarray[0][GNB_CONFIG_E1_IPV4_ADDRESS_CUUP].strptr);
+    e1Setup->port_cuup = *GNBE1PARAMList.paramarray[0][GNB_CONFIG_E1_PORT_CUUP].uptr;
+
+    e1Setup->cn_support = *GNBE1PARAMList.Paramarray[0][GNB_CONFIG_E1_CN_SUPPORT].uptr;
+  }
+
+  return 0;
+}
+
 int RCconfig_NR_DU_F1(MessageDef *msg_p, uint32_t i) {
   int k;
   paramdef_t GNBSParams[] = GNBSPARAMS_DESC;
@@ -2259,9 +2300,12 @@ void set_node_type(void) {
   paramlist_def_t   MacRLC_ParamList = {CONFIG_STRING_MACRLC_LIST,NULL,0};
   paramdef_t        GNBParams[]  = GNBPARAMS_DESC;
   paramlist_def_t   GNBParamList = {GNB_CONFIG_STRING_GNB_LIST,NULL,0};
+  paramdef_t        GNBE1Params[] = GNBE1PARAMS_DESC;
+  paramlist_def_t   GNBE1ParamList = {GNB_CONFIG_STRING_E1_PARAMETERS, NULL, 0};
 
   config_getlist( &MacRLC_ParamList,MacRLC_Params,sizeof(MacRLC_Params)/sizeof(paramdef_t), NULL);   
   config_getlist( &GNBParamList,GNBParams,sizeof(GNBParams)/sizeof(paramdef_t),NULL);  
+  config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), NULL);
 
   if ( MacRLC_ParamList.numelt > 0) {
     RC.nb_nr_macrlc_inst = MacRLC_ParamList.numelt; 
@@ -2273,16 +2317,21 @@ void set_node_type(void) {
   }
 
   if (strcmp(*(GNBParamList.paramarray[0][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "f1") == 0) {
-      node_type = ngran_gNB_CU;
+    node_type = ngran_gNB_CU;
+    if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "cu") == 0) {
+      cu_type = 0;
     } else {
-      if (macrlc_has_f1 == 0) {
-        node_type = ngran_gNB;
-        LOG_I(NR_RRC,"Setting node_type to ngran_gNB\n");
-      } else {
-        node_type = ngran_gNB_DU;
-        LOG_I(NR_RRC,"Setting node_type to ngran_gNB_DU\n");
-      }
+      cu_type = 1;
     }
+  } else {
+    if (macrlc_has_f1 == 0) {
+      node_type = ngran_gNB;
+      LOG_I(NR_RRC,"Setting node_type to ngran_gNB\n");
+    } else {
+      node_type = ngran_gNB_DU;
+      LOG_I(NR_RRC,"Setting node_type to ngran_gNB_DU\n");
+    }
+  }
 }
 
 void nr_read_config_and_init(void) {
