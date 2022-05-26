@@ -484,6 +484,7 @@ typedef struct {
 typedef struct gNB_RRC_INST_s {
 
   ngran_node_t                                        node_type;
+  int                                                 cu_type;
   uint32_t                                            node_id;
   char                                               *node_name;
   int                                                 module_id;
