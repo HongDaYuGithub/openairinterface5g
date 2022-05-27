@@ -46,138 +46,18 @@ int get_dci_format(NR_UE_sched_ctrl_t *sched_ctrl) {
   return(dci_format);
 }
 
-void calculate_preferred_ul_tda(module_id_t module_id, const NR_BWP_Uplink_t *ubwp)
-{
-  gNB_MAC_INST *nrmac = RC.nrmac[module_id];
-  const int bwp_id = ubwp->bwp_Id;
-  if (nrmac->preferred_ul_tda[bwp_id])
-    return;
+const int get_ul_tda(const gNB_MAC_INST *nrmac, const NR_ServingCellConfigCommon_t *scc, int slot) {
 
   /* there is a mixed slot only when in TDD */
-  NR_ServingCellConfigCommon_t *scc = nrmac->common_channels->ServingCellConfigCommon;
-  frame_type_t frame_type = nrmac->common_channels->frame_type;
-  const int n = nr_slots_per_frame[*scc->ssbSubcarrierSpacing];
+  const NR_TDD_UL_DL_Pattern_t *tdd = scc->tdd_UL_DL_ConfigurationCommon ? &scc->tdd_UL_DL_ConfigurationCommon->pattern1 : NULL;
+  AssertFatal(tdd || nrmac->common_channels->frame_type == FDD, "Dynamic TDD not handled yet\n");
 
-  NR_ServingCellConfigCommonSIB_t *scc_sib1 = get_softmodem_params()->sa ?
-      RC.nrmac[module_id]->common_channels[0].sib1->message.choice.c1->choice.systemInformationBlockType1->servingCellConfigCommon : NULL;
-
-  AssertFatal(scc!=NULL || scc_sib1!=NULL,"We need one serving cell config common\n");
-
-  const int mu = scc ? scc->uplinkConfigCommon->initialUplinkBWP->genericParameters.subcarrierSpacing :
-                 scc_sib1->uplinkConfigCommon->initialUplinkBWP.genericParameters.subcarrierSpacing;
-
-  NR_TDD_UL_DL_Pattern_t *tdd = NULL;
-  if (scc && scc->tdd_UL_DL_ConfigurationCommon) {
-    tdd = &scc->tdd_UL_DL_ConfigurationCommon->pattern1;
-  } else if (scc_sib1 && scc_sib1->tdd_UL_DL_ConfigurationCommon) {
-    tdd = &scc_sib1->tdd_UL_DL_ConfigurationCommon->pattern1;
+  if (tdd && tdd->nrofUplinkSymbols > 1) { // if there is uplink symbols in mixed slot
+    const int nr_slots_period = tdd->nrofDownlinkSlots + tdd->nrofUplinkSlots + 1;
+    if ((slot%nr_slots_period) == tdd->nrofDownlinkSlots)
+      return 1;
   }
-
-  /* Uplink symbols are at the end of the slot */
-  int symb_ulMixed = 0;
-  int nr_mix_slots = 0;
-  int nr_slots_period = n;
-  if (tdd) {
-    symb_ulMixed = ((1 << tdd->nrofUplinkSymbols) - 1) << (14 - tdd->nrofUplinkSymbols);
-    nr_mix_slots = tdd->nrofDownlinkSymbols != 0 || tdd->nrofUplinkSymbols != 0;
-    nr_slots_period /= get_nb_periods_per_frame(tdd->dl_UL_TransmissionPeriodicity);
-  }
-  else
-    // if TDD configuration is not present and the band is not FDD, it means it is a dynamic TDD configuration
-    AssertFatal(nrmac->common_channels->frame_type == FDD,"Dynamic TDD not handled yet\n");
-
-  const struct NR_PUCCH_Config__resourceToAddModList *resList = ubwp->bwp_Dedicated->pucch_Config->choice.setup->resourceToAddModList;
-  // for the moment, just block any symbol that might hold a PUCCH, regardless
-  // of the RB. This is a big simplification, as most RBs will NOT have a PUCCH
-  // in the respective symbols, but it simplifies scheduling
-  uint16_t symb_pucch = 0;
-  for (int i = 0; i < resList->list.count; ++i) {
-    const NR_PUCCH_Resource_t *resource = resList->list.array[i];
-    int nrofSymbols = 0;
-    int startingSymbolIndex = 0;
-    switch (resource->format.present) {
-      case NR_PUCCH_Resource__format_PR_format0:
-        nrofSymbols = resource->format.choice.format0->nrofSymbols;
-        startingSymbolIndex = resource->format.choice.format0->startingSymbolIndex;
-        break;
-      case NR_PUCCH_Resource__format_PR_format1:
-        nrofSymbols = resource->format.choice.format1->nrofSymbols;
-        startingSymbolIndex = resource->format.choice.format1->startingSymbolIndex;
-        break;
-      case NR_PUCCH_Resource__format_PR_format2:
-        nrofSymbols = resource->format.choice.format2->nrofSymbols;
-        startingSymbolIndex = resource->format.choice.format2->startingSymbolIndex;
-        break;
-      case NR_PUCCH_Resource__format_PR_format3:
-        nrofSymbols = resource->format.choice.format3->nrofSymbols;
-        startingSymbolIndex = resource->format.choice.format3->startingSymbolIndex;
-        break;
-      case NR_PUCCH_Resource__format_PR_format4:
-        nrofSymbols = resource->format.choice.format4->nrofSymbols;
-        startingSymbolIndex = resource->format.choice.format4->startingSymbolIndex;
-        break;
-      default:
-        AssertFatal(0, "found NR_PUCCH format index %d\n", resource->format.present);
-        break;
-    }
-    symb_pucch |= ((1 << nrofSymbols) - 1) << startingSymbolIndex;
-  }
-
-  /* check that TDA index 1 fits into UL slot and does not overlap with PUCCH */
-  const struct NR_PUSCH_TimeDomainResourceAllocationList *tdaList = ubwp->bwp_Common->pusch_ConfigCommon->choice.setup->pusch_TimeDomainAllocationList;
-  const NR_PUSCH_TimeDomainResourceAllocation_t *tdaP_UL = tdaList->list.array[0];
-  const int k2 = get_K2(scc, scc_sib1, (NR_BWP_Uplink_t*)ubwp,0, mu);
-  int start, len;
-  SLIV2SL(tdaP_UL->startSymbolAndLength, &start, &len);
-  const uint16_t symb_tda = ((1 << len) - 1) << start;
-  // check whether PUCCH and TDA overlap: then, we cannot use it. Note that
-  // here we assume that the PUCCH is scheduled in every slot, and on all RBs
-  // (which is mostly not true, this is a simplification)
-  AssertFatal((symb_pucch & symb_tda) == 0, "TDA index 0 for UL overlaps with PUCCH\n");
-
-  // get largest time domain allocation (TDA) for UL slot and UL in mixed slot
-  int tdaMi = -1;
-  if (nr_mix_slots>0) {
-    const NR_PUSCH_TimeDomainResourceAllocation_t *tdaP_Mi = tdaList->list.array[1];
-    AssertFatal(k2 == get_K2(scc, scc_sib1, (NR_BWP_Uplink_t*)ubwp, 1, mu),
-                "scheduler cannot handle different k2 for UL slot (%d) and UL Mixed slot (%ld)\n",
-                k2,
-                get_K2(scc, scc_sib1, (NR_BWP_Uplink_t*)ubwp, 1, mu));
-    SLIV2SL(tdaP_Mi->startSymbolAndLength, &start, &len);
-    const uint16_t symb_tda_mi = ((1 << len) - 1) << start;
-    // check whether PUCCH and TDA overlap: then, we cannot use it. Also, check
-    // whether TDA is entirely within mixed slot, UL. Note that here we assume
-    // that the PUCCH is scheduled in every slot, and on all RBs (which is
-    // mostly not true, this is a simplification)
-    if ((symb_pucch & symb_tda_mi) == 0 && (symb_ulMixed & symb_tda_mi) == symb_tda_mi) {
-      tdaMi = 1;
-    } else {
-      LOG_E(NR_MAC,
-            "TDA index 1 UL overlaps with PUCCH or is not entirely in mixed slot (symb_pucch %x symb_ulMixed %x symb_tda_mi %x), won't schedule UL mixed slot\n",
-            symb_pucch,
-            symb_ulMixed,
-            symb_tda_mi);
-    }
-  }
-
-  nrmac->preferred_ul_tda[bwp_id] = malloc(n * sizeof(*nrmac->preferred_ul_tda[bwp_id]));
-
-  for (int slot = 0; slot < n; ++slot) {
-    const int sched_slot = (slot + k2) % n;
-    nrmac->preferred_ul_tda[bwp_id][slot] = -1;
-    if (frame_type == FDD || sched_slot % nr_slots_period >= tdd->nrofDownlinkSlots + nr_mix_slots)
-      nrmac->preferred_ul_tda[bwp_id][slot] = 0;
-    else if (nr_mix_slots && sched_slot % nr_slots_period == tdd->nrofDownlinkSlots)
-      nrmac->preferred_ul_tda[bwp_id][slot] = tdaMi;
-    LOG_D(MAC, "DL slot %d UL slot %d preferred_ul_tda %d\n", slot, sched_slot, nrmac->preferred_ul_tda[bwp_id][slot]);
-  }
-
-  if (tdd && k2 < tdd->nrofUplinkSlots) {
-    LOG_W(NR_MAC,
-          "k2 %d < tdd->nrofUplinkSlots %ld: not all UL slots can be scheduled\n",
-          k2,
-          tdd->nrofUplinkSlots);
-  }
+  return 0; // if FDD or not mixed slot in TDD, for now use default TDA (TODO handle CSI-RS slots)
 }
 
 //  For both UL-SCH except:
@@ -923,7 +803,7 @@ bool nr_UE_is_to_be_scheduled(module_id_t mod_id, int CC_id, int UE_id, frame_t 
   }
   else {
     num_slots_per_period = n;
-    last_ul_slot = sched_ctrl->last_ul_slot; 
+    last_ul_slot = sched_ctrl->last_ul_slot;
   }
 
   last_ul_sched = sched_ctrl->last_ul_frame * n + last_ul_slot;
@@ -978,9 +858,9 @@ bool allocate_ul_retransmission(module_id_t module_id,
 
   int rbStart = 0; // wrt BWP start
   const uint16_t bwpSize = NRRIV2BW(genericParameters->locationAndBandwidth, MAX_BWP_SIZE);
-
+  const uint8_t nrOfLayers = 1;
   const uint8_t num_dmrs_cdm_grps_no_data = (sched_ctrl->active_bwp || ubwpd) ? 1 : 2;
-  const int tda = sched_ctrl->active_ubwp ? RC.nrmac[module_id]->preferred_ul_tda[sched_ctrl->active_ubwp->bwp_Id][slot] : 0;
+  const int tda = get_ul_tda(nr_mac, scc, retInfo->slot);
   LOG_D(NR_MAC,"retInfo->time_domain_allocation = %d, tda = %d\n", retInfo->time_domain_allocation, tda);
   LOG_D(NR_MAC,"num_dmrs_cdm_grps_no_data %d, tbs %d\n",num_dmrs_cdm_grps_no_data, retInfo->tb_size);
   if (tda == retInfo->time_domain_allocation) {
@@ -992,6 +872,7 @@ bool allocate_ul_retransmission(module_id_t module_id,
 
     if (ps->time_domain_allocation != tda
         || ps->dci_format != dci_format
+        || ps->nrOfLayers != nrOfLayers
         || ps->num_dmrs_cdm_grps_no_data != num_dmrs_cdm_grps_no_data) {
       nr_set_pusch_semi_static(sib1,
                                scc,
@@ -1000,6 +881,7 @@ bool allocate_ul_retransmission(module_id_t module_id,
                                dci_format,
                                tda,
                                num_dmrs_cdm_grps_no_data,
+                               nrOfLayers,
                                ps);
     }
 
@@ -1022,6 +904,7 @@ bool allocate_ul_retransmission(module_id_t module_id,
                              dci_format,
                              tda,
                              num_dmrs_cdm_grps_no_data,
+                             nrOfLayers,
                              &temp_ps);
     /* the retransmission will use a different time domain allocation, check
      * that we have enough resources */
@@ -1248,11 +1131,13 @@ void pf_ul(module_id_t module_id,
       /* we want to avoid a lengthy deduction of DMRS and other parameters in
        * every TTI if we can save it, so check whether dci_format, TDA, or
        * num_dmrs_cdm_grps_no_data has changed and only then recompute */
+      const uint8_t nrOfLayers = 1;
       const uint8_t num_dmrs_cdm_grps_no_data = (sched_ctrl->active_ubwp || ubwpd) ? 1 : 2;
       int dci_format = get_dci_format(sched_ctrl);
-      const int tda = sched_ctrl->active_ubwp ? nrmac->preferred_ul_tda[sched_ctrl->active_ubwp->bwp_Id][slot] : 0;
+      const int tda = get_ul_tda(nrmac, scc, sched_pusch->slot);
       if (ps->time_domain_allocation != tda
           || ps->dci_format != dci_format
+          || ps->nrOfLayers != nrOfLayers
           || ps->num_dmrs_cdm_grps_no_data != num_dmrs_cdm_grps_no_data) {
         nr_set_pusch_semi_static(sib1,
                                  scc,
@@ -1261,10 +1146,12 @@ void pf_ul(module_id_t module_id,
                                  dci_format,
                                  tda,
                                  num_dmrs_cdm_grps_no_data,
+                                 nrOfLayers,
                                  ps);
       }
 
-      LOG_D(NR_MAC,"Looking for min_rb %d RBs, starting at %d\n", min_rb, rbStart);
+      LOG_D(NR_MAC,"Looking for min_rb %d RBs, starting at %d num_dmrs_cdm_grps_no_data %d\n",
+            min_rb, rbStart, ps->num_dmrs_cdm_grps_no_data);
       const uint16_t slbitmap = SL_to_bitmap(ps->startSymbolIndex, ps->nrOfSymbols);
       while (rbStart < bwpSize && (rballoc_mask[rbStart] & slbitmap) != slbitmap)
         rbStart++;
@@ -1293,7 +1180,7 @@ void pf_ul(module_id_t module_id,
                                             ps->N_PRB_DMRS * ps->num_dmrs_symb,
                                             0, // nb_rb_oh
                                             0,
-                                            1 /* NrOfLayers */)
+                                            ps->nrOfLayers)
                              >> 3;
 
       /* Mark the corresponding RBs as used */
@@ -1383,11 +1270,13 @@ void pf_ul(module_id_t module_id,
     /* we want to avoid a lengthy deduction of DMRS and other parameters in
      * every TTI if we can save it, so check whether dci_format, TDA, or
      * num_dmrs_cdm_grps_no_data has changed and only then recompute */
+    const uint8_t nrOfLayers = 1;
     const uint8_t num_dmrs_cdm_grps_no_data = (sched_ctrl->active_ubwp || ubwpd) ? 1 : 2;
     int dci_format = get_dci_format(sched_ctrl);
-    const int tda = sched_ctrl->active_ubwp ? nrmac->preferred_ul_tda[sched_ctrl->active_ubwp->bwp_Id][slot] : 0;
+    const int tda = get_ul_tda(nrmac, scc, sched_pusch->slot);
     if (ps->time_domain_allocation != tda
         || ps->dci_format != dci_format
+        || ps->nrOfLayers != nrOfLayers
         || ps->num_dmrs_cdm_grps_no_data != num_dmrs_cdm_grps_no_data) {
       nr_set_pusch_semi_static(sib1,
                                scc,
@@ -1396,6 +1285,7 @@ void pf_ul(module_id_t module_id,
                                dci_format,
                                tda,
                                num_dmrs_cdm_grps_no_data,
+                               nrOfLayers,
                                ps);
     }
     update_ul_ue_R_Qm(sched_pusch, ps);
@@ -1415,12 +1305,11 @@ void pf_ul(module_id_t module_id,
     }
     else LOG_D(NR_MAC,"allocating UL data for UE %d/RNTI %04x (rbStsart %d, min_rb %d, bwpSize %d\n",UE_id, UE_info->rnti[UE_id],rbStart,min_rb,bwpSize);
 
-
     /* Calculate the current scheduling bytes and the necessary RBs */
     const int B = cmax(sched_ctrl->estimated_ul_buffer - sched_ctrl->sched_ul_bytes, 0);
     uint16_t rbSize = 0;
     uint32_t TBS = 0;
-    
+
     nr_find_nb_rb(sched_pusch->Qm,
                   sched_pusch->R,
                   1, // layers
@@ -1477,12 +1366,14 @@ bool nr_fr1_ulsch_preprocessor(module_id_t module_id, frame_t frame, sub_frame_t
    * schedule now (slot + k2 is not UL slot) */
   int UE_id = UE_info->list.head;
   NR_UE_sched_ctrl_t *sched_ctrl = &UE_info->UE_sched_ctrl[UE_id];
-  const int tda = sched_ctrl->active_ubwp ? nr_mac->preferred_ul_tda[sched_ctrl->active_ubwp->bwp_Id][slot] : 0;
+  const int temp_tda = get_ul_tda(nr_mac, scc, slot);
+  int K2 = get_K2(scc, scc_sib1, sched_ctrl->active_ubwp, temp_tda, mu);
+  const int sched_frame = (frame + (slot + K2 >= nr_slots_per_frame[mu])) & 1023;
+  const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
+  const int tda = get_ul_tda(nr_mac, scc, sched_slot);
   if (tda < 0)
     return false;
-  int K2 = get_K2(scc, scc_sib1, sched_ctrl->active_ubwp, tda, mu);
-  const int sched_frame = (frame + (slot + K2 >= nr_slots_per_frame[mu])) % 1024;
-  const int sched_slot = (slot + K2) % nr_slots_per_frame[mu];
+  DevAssert(K2 == get_K2(scc, scc_sib1, sched_ctrl->active_ubwp, tda, mu));
 
   if (!is_xlsch_in_slot(nr_mac->ulsch_slot_bitmap[sched_slot / 64], sched_slot))
     return false;
@@ -1594,7 +1485,7 @@ nr_pp_impl_ul nr_init_fr1_ulsch_preprocessor(module_id_t module_id, int CC_id)
       if (mcs > 27 && mcsTableIdx == 1)
         continue;
       const uint8_t Qm = nr_get_Qm_dl(mcs, mcsTableIdx);
-      const uint16_t R = nr_get_code_rate_dl(mcs, mcsTableIdx);
+      const uint16_t R = nr_get_code_rate_ul(mcs, mcsTableIdx);
       /* note: we do not update R/Qm based on low MCS or pi2BPSK */
       ul_pf_tbs[mcsTableIdx][mcs] = nr_compute_tbs(Qm,
                                                    R,
@@ -1720,7 +1611,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
     sched_ctrl->last_ul_slot = sched_pusch->slot;
 
     LOG_D(NR_MAC,
-          "ULSCH/PUSCH: %4d.%2d RNTI %04x UL sched %4d.%2d DCI L %d start %2d RBS %3d startSymbol %2d nb_symbol %2d dmrs_pos %x MCS %2d TBS %4d HARQ PID %2d round %d RV %d NDI %d est %6d sched %6d est BSR %6d TPC %d\n",
+          "ULSCH/PUSCH: %4d.%2d RNTI %04x UL sched %4d.%2d DCI L %d start %2d RBS %3d startSymbol %2d nb_symbol %2d dmrs_pos %x MCS %2d nrOfLayers %2d num_dmrs_cdm_grps_no_data %2d TBS %4d HARQ PID %2d round %d RV %d NDI %d est %6d sched %6d est BSR %6d TPC %d\n",
           frame,
           slot,
           rnti,
@@ -1733,6 +1624,8 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
           ps->nrOfSymbols,
           ps->ul_dmrs_symb_pos,
           sched_pusch->mcs,
+          ps->nrOfLayers,
+          ps->num_dmrs_cdm_grps_no_data,
           sched_pusch->tb_size,
           harq_id,
           cur_harq->round,
@@ -1789,7 +1682,8 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
       pusch_pdu->data_scrambling_id = *ps->pusch_Config->dataScramblingIdentityPUSCH;
     else
       pusch_pdu->data_scrambling_id = *scc->physCellId;
-    pusch_pdu->nrOfLayers = 1;
+    pusch_pdu->nrOfLayers = ps->nrOfLayers;
+    pusch_pdu->num_dmrs_cdm_grps_no_data = ps->num_dmrs_cdm_grps_no_data;
 
     /* FAPI: DMRS */
     pusch_pdu->ul_dmrs_symb_pos = ps->ul_dmrs_symb_pos;
@@ -1814,7 +1708,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
     }
     pusch_pdu->scid = 0;      // DMRS sequence initialization [TS38.211, sec 6.4.1.1.1]
     pusch_pdu->num_dmrs_cdm_grps_no_data = ps->num_dmrs_cdm_grps_no_data;
-    pusch_pdu->dmrs_ports = 1;
+    pusch_pdu->dmrs_ports = ((1<<ps->nrOfLayers) - 1);
 
     /* FAPI: Pusch Allocation in frequency domain */
     pusch_pdu->resource_alloc = 1; //type 1
@@ -1837,6 +1731,8 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
     pusch_pdu->pusch_data.new_data_indicator = cur_harq->ndi;
     pusch_pdu->pusch_data.tb_size = sched_pusch->tb_size;
     pusch_pdu->pusch_data.num_cb = 0; //CBG not supported
+
+    pusch_pdu->maintenance_parms_v3.tbSizeLbrmBytes = 0;
 
     LOG_D(NR_MAC,"PUSCH PDU : data_scrambling_identity %x, dmrs_scrambling_id %x\n",pusch_pdu->data_scrambling_id,pusch_pdu->ul_dmrs_scrambling_id);
     /* TRANSFORM PRECODING --------------------------------------------------------*/
@@ -1877,7 +1773,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
 
     /* look up the PDCCH PDU for this BWP and CORESET. If it does not exist,
      * create it */
-    const int bwpid = sched_ctrl->active_bwp ? sched_ctrl->active_bwp->bwp_Id : 0;
+    const int bwp_id = sched_ctrl->active_bwp ? sched_ctrl->active_bwp->bwp_Id : 0;
     NR_SearchSpace_t *ss = (sched_ctrl->active_bwp || ubwpd) ? sched_ctrl->search_space: RC.nrmac[module_id]->sched_ctrlCommon->search_space;
     NR_ControlResourceSet_t *coreset = (sched_ctrl->active_bwp || ubwpd) ? sched_ctrl->coreset: RC.nrmac[module_id]->sched_ctrlCommon->coreset;
     const int coresetid = coreset->controlResourceSetId;
@@ -1933,7 +1829,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
                  ps->time_domain_allocation,
                  UE_info->UE_sched_ctrl[UE_id].tpc0,
                  n_ubwp,
-                 bwpid);
+                 bwp_id);
     fill_dci_pdu_rel15(scc,
                        cg,
                        dci_pdu,
@@ -1941,10 +1837,10 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
                        ps->dci_format,
                        rnti_types[0],
                        pusch_pdu->bwp_size,
-                       bwpid,
+                       bwp_id,
+                       coresetid,
                        nr_mac->cset0_bwp_size);
 
     memset(sched_pusch, 0, sizeof(*sched_pusch));
   }
 }
-

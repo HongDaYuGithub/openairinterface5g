@@ -239,19 +239,12 @@ void ldpc8blocks( void *p) {
           impp->F,
           Kr-impp->F-2*(*impp->Zc),
           mod_order,nb_rb,rel15->nrOfLayers);
-    // for tbslbrm calculation according to 5.4.2.1 of 38.212
-    uint8_t Nl = 4;
 
-    if (rel15->nrOfLayers < Nl)
-      Nl = rel15->nrOfLayers;
-
-    uint32_t Tbslbrm = nr_compute_tbslbrm(rel15->mcsTable[0],nb_rb,Nl);
-    uint8_t Ilbrm = 1;
+    uint32_t Tbslbrm = rel15->maintenance_parms_v3.tbSizeLbrmBytes;
 
     uint8_t e[E];
     bzero (e, E);
-    nr_rate_matching_ldpc(Ilbrm,
-                          Tbslbrm,
+    nr_rate_matching_ldpc(Tbslbrm,
                           impp->BG,
                           *impp->Zc,
                           impp->d[rr],
@@ -312,7 +305,6 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
   unsigned int crc=1;
   nfapi_nr_dl_tti_pdsch_pdu_rel15_t *rel15 = &harq->pdsch_pdu.pdsch_pdu_rel15;
   impp.Zc = &harq->Z;
-  float Coderate = 0.0;
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_gNB_DLSCH_ENCODING, VCD_FUNCTION_IN);
   uint32_t A = rel15->TBSize[0]<<3;
   unsigned char *a=harq->pdu;
@@ -375,10 +367,9 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
     memcpy(harq->b, a, (A / 8) + 3); // using 3 bytes to mimic the case of 24 bit crc
   }
 
-  if (rel15->targetCodeRate[0]<1000)
-    Coderate = (float)rel15->targetCodeRate[0] /(float) 1024;
-  else  // to scale for mcs 20 and 26 in table 5.1.3.1-2 which are decimal and input 2* in nr_tbs_tools
-    Coderate = (float)rel15->targetCodeRate[0] /(float) 2048;
+  // target_code_rate is in 0.1 units
+  float Coderate = (float) rel15->targetCodeRate[0] / 10240.0f;
+  LOG_D(PHY,"DLSCH Coderate %f\n",Coderate);
 
   if ((A <=292) || ((A<=3824) && (Coderate <= 0.6667)) || Coderate <= 0.25)
     impp.BG = 2;

@@ -42,7 +42,7 @@ void process_CellGroup(NR_CellGroupConfig_t *CellGroup, NR_UE_sched_ctrl_t *sche
 
 void config_common(int Mod_idP,
                    int ssb_SubcarrierOffset,
-                   rrc_pdsch_AntennaPorts_t pdsch_AntennaPorts,
+                   int pdsch_AntennaPorts,
                    int pusch_AntennaPorts,
                    NR_ServingCellConfigCommon_t *scc);
 
@@ -75,6 +75,10 @@ void nr_mac_update_timers(module_id_t module_id,
 
 void gNB_dlsch_ulsch_scheduler(module_id_t module_idP,
 			       frame_t frame_rxP, sub_frame_t slot_rxP);
+
+void schedule_nr_bwp_switch(module_id_t module_id,
+                            frame_t frame,
+                            sub_frame_t slot);
 
 /* \brief main DL scheduler function. Calls a preprocessor to decide on
  * resource allocation, then "post-processes" resource allocation (nFAPI
@@ -303,6 +307,7 @@ void fill_dci_pdu_rel15(const NR_ServingCellConfigCommon_t *scc,
                         int rnti_types,
                         int N_RB,
                         int bwp_id,
+                        NR_ControlResourceSetId_t coreset_id,
                         uint16_t cset0_bwp_size);
 
 void prepare_dci(const NR_CellGroupConfig_t *CellGroup,
@@ -366,6 +371,7 @@ void nr_set_pusch_semi_static(const NR_SIB1_t *sib1,
                               long dci_format,
                               int tda,
                               uint8_t num_dmrs_cdm_grps_no_data,
+                              uint8_t nrOfLayers,
                               NR_pusch_semi_static_t *ps);
 
 uint16_t get_Y(int cid, int slot, rnti_t rnti);
@@ -382,13 +388,6 @@ void nr_get_tbs_dl(nfapi_nr_dl_tti_pdsch_pdu *pdsch_pdu,
 		   int x_overhead,
                    uint8_t numdmrscdmgroupnodata,
                    uint8_t tb_scaling);
-/** \brief Computes Q based on I_MCS PDSCH and table_idx for downlink. Implements MCS Tables from 38.214. */
-uint8_t nr_get_Qm_dl(uint8_t Imcs, uint8_t table_idx);
-uint32_t nr_get_code_rate_dl(uint8_t Imcs, uint8_t table_idx);
-
-/** \brief Computes Q based on I_MCS PDSCH and table_idx for uplink. Implements MCS Tables from 38.214. */
-uint8_t nr_get_Qm_ul(uint8_t Imcs, uint8_t table_idx);
-uint32_t nr_get_code_rate_ul(uint8_t Imcs, uint8_t table_idx);
 
 int NRRIV2BW(int locationAndBandwidth,int N_RB);
 
@@ -502,13 +501,19 @@ void find_SSB_and_RO_available(module_id_t module_idP);
 
 void set_dl_dmrs_ports(NR_pdsch_semi_static_t *ps);
 
+uint16_t set_pm_index(NR_UE_sched_ctrl_t *sched_ctrl,
+                      int layers,
+                      int N1, int N2,
+                      int xp_pdsch_antenna_ports,
+                      int codebook_mode);
+
 uint8_t get_mcs_from_cqi(int mcs_table, int cqi_table, int cqi_idx);
 
 uint8_t set_dl_nrOfLayers(NR_UE_sched_ctrl_t *sched_ctrl);
 
 int get_dci_format(NR_UE_sched_ctrl_t *sched_ctrl);
-void calculate_preferred_dl_tda(module_id_t module_id, const NR_BWP_Downlink_t *bwp);
-void calculate_preferred_ul_tda(module_id_t module_id, const NR_BWP_Uplink_t *ubwp);
+const int get_dl_tda(const gNB_MAC_INST *nrmac, const NR_ServingCellConfigCommon_t *scc, int slot);
+const int get_ul_tda(const gNB_MAC_INST *nrmac, const NR_ServingCellConfigCommon_t *scc, int slot);
 
 bool find_free_CCE(module_id_t module_id, sub_frame_t slot, int UE_id);
 
