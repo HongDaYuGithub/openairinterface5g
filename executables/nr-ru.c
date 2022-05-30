@@ -698,7 +698,7 @@ void rx_rf(RU_t *ru,int *frame,int *slot) {
   }
 
 #if LATSEQ
-  LATSEQ_P("U phy.in.ant--phy.in.proc","len%d::frame_rx%d.fm%d.slot%d", rxs, proc->frame_rx, frame, slot);
+  LATSEQ_P("U phy.in.ant--phy.in.proc","len%d::frame_rx%d.slot%d", rxs, proc->frame_rx, proc->tti_rx);
 #endif
 
   stop_meas(&ru->rx_fhaul);
