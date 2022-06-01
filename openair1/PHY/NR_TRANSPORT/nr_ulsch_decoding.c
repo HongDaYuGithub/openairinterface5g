@@ -622,7 +622,7 @@ uint32_t nr_ulsch_decoding(PHY_VARS_gNB *phy_vars_gNB,
     phy_vars_gNB->nbDecode++;
 #if LATSEQ
     int sz=Kr_bytes - (harq_process->F>>3) - ((harq_process->C>1)?3:0)
-    LATSEQ_P("U phy.in.proc--mac.harq.up", "len%d::ulsch_id%d.cbseg%d.fm%d.ulsch_harq%d.slot%d", sz, rdata->ulsch_id, r, frame, rdata->ulsch_harq, nr_tti_rx);
+    LATSEQ_P("U phy.in.proc--mac.harq.up", "len%d::ulsch_id%d.codeblocksegment%d.frame%d.ulsch_harq%d.slot%d", sz, rdata->ulsch_id, r, frame, rdata->ulsch_harq, nr_tti_rx);
 #endif
     LOG_D(PHY,"Added a block to decode, in pipe: %d\n",phy_vars_gNB->nbDecode);
     r_offset += E;
