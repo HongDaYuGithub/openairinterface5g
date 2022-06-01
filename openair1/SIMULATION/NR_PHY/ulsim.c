@@ -348,7 +348,7 @@ int main(int argc, char **argv)
   /* initialize the sin-cos table */
    InitSinLUT();
 
-  while ((c = getopt(argc, argv, "a:b:c:d:ef:g:h:i:kl:m:n:p:r:s:t:u:w:y:z:F:G:H:M:N:PR:S:T:U:L:Z:W:")) != -1) {
+  while ((c = getopt(argc, argv, "a:b:c:d:ef:g:h:ikl:m:n:p:r:s:t:u:w:y:z:F:G:H:M:N:PR:S:T:U:L:Z:W:")) != -1) {
     printf("handling optarg %c\n",c);
     switch (c) {
 
@@ -890,15 +890,11 @@ int main(int argc, char **argv)
     /* Additional DMRS positions */
     if(dmrs_arg[1] >= 0 && dmrs_arg[1] <=3 )
       add_pos = dmrs_arg[1];
-
     /* DMRS Conf Type 1 or 2 */
-    if(dmrs_arg[2] == 1) {
+    if(dmrs_arg[2] == 1)
       dmrs_config_type = pusch_dmrs_type1;
-    } else if(dmrs_arg[2] == 2) {
+    else if(dmrs_arg[2] == 2)
       dmrs_config_type = pusch_dmrs_type2;
-    }
-
-    printf("NOTE: DMRS config is modified with Mapping Type %d , Additional Position %d \n", mapping_type, add_pos );
   }
 
   uint8_t  length_dmrs         = pusch_len1;

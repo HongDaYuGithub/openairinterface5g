@@ -310,7 +310,7 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
   uint32_t A = rel15->TBSize[0]<<3;
   unsigned char *a=harq->pdu;
   if ( rel15->rnti != SI_RNTI)
-    trace_NRpdu(DIRECTION_DOWNLINK, a, rel15->TBSize[0], 0, WS_C_RNTI, rel15->rnti, frame, slot,0, 0);
+    trace_NRpdu(DIRECTION_DOWNLINK, a, rel15->TBSize[0], WS_C_RNTI, rel15->rnti, frame, slot,0, 0);
 
   NR_gNB_SCH_STATS_t *stats=NULL;
   int first_free=-1;
@@ -368,8 +368,8 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
     memcpy(harq->b, a, (A / 8) + 3); // using 3 bytes to mimic the case of 24 bit crc
   }
 
-  // target_code_rate in terms of 0.1 bits
-  float Coderate = (float) rel15->targetCodeRate[0] / (float) 10240;
+  // target_code_rate is in 0.1 units
+  float Coderate = (float) rel15->targetCodeRate[0] / 10240.0f;
   LOG_D(PHY,"DLSCH Coderate %f\n",Coderate);
 
   if ((A <=292) || ((A<=3824) && (Coderate <= 0.6667)) || Coderate <= 0.25)
