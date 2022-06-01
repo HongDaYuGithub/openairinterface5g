@@ -45,6 +45,7 @@
 #include "rrc_gNB_UE_context.h"
 #include <openair2/RRC/NR/MESSAGES/asn1_msg.h>
 #include <openair2/F1AP/f1ap_du_rrc_message_transfer.h>
+#include <NR_MAC_gNB/mac_proto.h>
 
 
 extern RAN_CONTEXT_t RC;
@@ -149,6 +150,9 @@ int generate_pdcch_ConfigSIB1(NR_PDCCH_ConfigSIB1_t *pdcch_ConfigSIB1,
 int
 nr_rrc_mac_remove_ue(module_id_t mod_idP,
                   rnti_t rntiP){
+
+  gNB_MAC_INST *gNB_mac = RC.nrmac[mod_idP];
+  mac_remove_nr_ue(gNB_mac, rntiP);
   // todo
   return 0;
 }

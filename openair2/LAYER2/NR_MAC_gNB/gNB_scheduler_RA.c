@@ -1685,7 +1685,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
             lcid = DL_SCH_LCID_DCCH;
           } else {
             LOG_W(NR_MAC, "No Msg4, release ra proc. 0x%04x\n", ra->rnti);
-            mac_remove_nr_ue(module_idP, ra->rnti);
+            mac_remove_nr_ue(nr_mac, ra->rnti);
             nr_clear_ra_proc(module_idP, CC_id, frameP, ra);
             return;
           }
