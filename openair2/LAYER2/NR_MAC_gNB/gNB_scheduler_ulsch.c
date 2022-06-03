@@ -37,6 +37,10 @@
 
 #include "LAYER2/NR_MAC_COMMON/nr_mac_extern.h"
 
+#if LATSEQ
+  #include "common/utils/LATSEQ/latseq.h"
+#endif
+
 int get_dci_format(NR_UE_sched_ctrl_t *sched_ctrl) {
 
     const long f = sched_ctrl->search_space->searchSpaceType->choice.ue_Specific->dci_Formats;
@@ -669,7 +673,11 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
           timing_advance,
           sduP,
           rssi);
-
+          
+#if LATSEQ
+    LATSEQ_P("U mac.harq.up--mac.demux", "len%d:rnti:frame%d.slot%d", sdu_lenP, current_rnti, frameP, slotP)
+#endif    
+    
     // if not missed detection (10dB threshold for now)
     if (rssi>0) {
       UE_scheduling_control->tpc0 = nr_get_tpc(target_snrx10,ul_cqi,30);
