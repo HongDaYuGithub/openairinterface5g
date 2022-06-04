@@ -1826,6 +1826,8 @@ int RCconfig_NR_CU_E1(MessageDef *msg_p, uint32_t i) {
   paramlist_def_t GNBParamList = {GNB_CONFIG_STRING_GNB_LIST,NULL,0};
   paramlist_def_t GNBE1ParamList = {GNB_CONFIG_STRING_E1_PARAMETERS, NULL, 0};
   config_get(GNBSParams, sizeof(GNBSParams)/sizeof(paramdef_t), NULL);
+  char aprefix[MAX_OPTNAME_SIZE*2 + 8];
+  sprintf(aprefix, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, 0);
   int num_gnbs = GNBSParams[GNB_ACTIVE_GNBS_IDX].numelt;
   AssertFatal (i < num_gnbs,
                "Failed to parse config file no %uth element in %s \n",i, GNB_CONFIG_STRING_ACTIVE_GNBS);
@@ -1834,8 +1836,9 @@ int RCconfig_NR_CU_E1(MessageDef *msg_p, uint32_t i) {
     config_getlist(&GNBParamList, GNBParams, sizeof(GNBParams)/sizeof(paramdef_t), NULL);
     AssertFatal(GNBParamList.paramarray[i][GNB_GNB_ID_IDX].uptr != NULL,
                 "gNB id %u is not defined in configuration file\n",i);
-    config_getlist(&GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), NULL);
+    config_getlist(&GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), aprefix);
     e1ap_setup_req_t *e1Setup = &E1AP_SETUP_REQ(msg_p);
+    msg_p->ittiMsgHeader.destinationInstance = 0;
     e1Setup->gNB_cu_up_id = *(GNBParamList.paramarray[0][GNB_GNB_ID_IDX].uptr);
 
     paramdef_t PLMNParams[] = GNBPLMNPARAMS_DESC;
@@ -1846,7 +1849,7 @@ int RCconfig_NR_CU_E1(MessageDef *msg_p, uint32_t i) {
     for (int I = 0; I < sizeof(PLMNParams) / sizeof(paramdef_t); ++I)
       PLMNParams[I].chkPptr = &(config_check_PLMNParams[I]);
 
-    config_getlist(&PLMNParamList, PLMNParams, sizeof(PLMNParams)/sizeof(paramdef_t), NULL);
+    config_getlist(&PLMNParamList, PLMNParams, sizeof(PLMNParams)/sizeof(paramdef_t), aprefix);
     int numPLMNs = PLMNParamList.numelt;
     e1Setup->supported_plmns = numPLMNs;
 
@@ -1857,8 +1860,10 @@ int RCconfig_NR_CU_E1(MessageDef *msg_p, uint32_t i) {
     }
 
     strcpy(e1Setup->CUCP_e1_ip_address.ipv4_address, *(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_IPV4_ADDRESS_CUCP].strptr));
+    e1Setup->CUCP_e1_ip_address.ipv4 = 1;
     e1Setup->port_cucp = *GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_PORT_CUCP].uptr;
     strcpy(e1Setup->CUUP_e1_ip_address.ipv4_address, *(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_IPV4_ADDRESS_CUUP].strptr));
+    e1Setup->CUUP_e1_ip_address.ipv4 = 1;
     e1Setup->port_cuup = *GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_PORT_CUUP].uptr;
 
     e1Setup->cn_support = *GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CN_SUPPORT].uptr;
@@ -2305,7 +2310,9 @@ void set_node_type(void) {
 
   config_getlist( &MacRLC_ParamList,MacRLC_Params,sizeof(MacRLC_Params)/sizeof(paramdef_t), NULL);   
   config_getlist( &GNBParamList,GNBParams,sizeof(GNBParams)/sizeof(paramdef_t),NULL);  
-  config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), NULL);
+  char aprefix[MAX_OPTNAME_SIZE*2 + 8];
+  sprintf(aprefix, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, 0);
+  config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), aprefix);
 
   if ( MacRLC_ParamList.numelt > 0) {
     RC.nb_nr_macrlc_inst = MacRLC_ParamList.numelt; 
@@ -2318,10 +2325,12 @@ void set_node_type(void) {
 
   if (strcmp(*(GNBParamList.paramarray[0][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "f1") == 0) {
     node_type = ngran_gNB_CU;
-    if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "cu") == 0) {
+    if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "cp") == 0) {
       cu_type = 0;
-    } else {
+    } else if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "up") == 0) {
       cu_type = 1;
+    } else {
+      AssertFatal(1 == 0, "Unknown E1 CU type parameter\n");
     }
   } else {
     if (macrlc_has_f1 == 0) {
