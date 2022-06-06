@@ -399,7 +399,7 @@ void nr_decode_pucch0(PHY_VARS_gNB *gNB,
   uci_stats->pucch0_thres = gNB->pucch0_thres; /* + (10*max_n0);*/
   bool no_conf=false;
   if (nr_sequences>1) {
-    if (xrtmag_dBtimes10 < (30+xrtmag_next_dBtimes10) || SNRtimes10 < uci_stats->pucch0_thres) {
+    if (/*xrtmag_dBtimes10 < (30+xrtmag_next_dBtimes10) ||*/ SNRtimes10 < uci_stats->pucch0_thres) {
       no_conf=true;
       LOG_D(NR_PHY,"%d.%d PUCCH bad confidence: %d threshold, %d, %d, %d\n",
             frame, slot,
@@ -436,7 +436,6 @@ void nr_decode_pucch0(PHY_VARS_gNB *gNB,
     uci_pdu->harq->num_harq = 1;
     uci_pdu->harq->harq_confidence_level = no_conf;
     uci_pdu->harq->harq_list = (nfapi_nr_harq_t*)malloc(sizeof *uci_pdu->harq->harq_list);
-
     uci_pdu->harq->harq_list[0].harq_value = !(index&0x01);
     if (no_conf) LOG_I(NR_PHY, "[DLSCH/PDSCH/PUCCH] %d.%d HARQ %s with confidence level %s xrt_mag %d xrt_mag_next %d n0 %d (%d,%d) pucch0_thres %d, cqi %d, SNRtimes10 %d, energy %f, sync_pos %d\n",
           frame,slot,uci_pdu->harq->harq_list[0].harq_value==0?"ACK":"NACK",
