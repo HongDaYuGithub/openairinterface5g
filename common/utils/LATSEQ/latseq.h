@@ -48,16 +48,16 @@
 #define MAX_NB_THREAD       32  // Maximum number of instrumented threads expected
 
 /*--- MACRO ------------------------------------------------------------------*/
-#define LATSEQ_P3(p, f, i1), do {log_measure1(p, f, (uint32_t)i1); } while(0)
-#define LATSEQ_P4(p, f, i1, i2), do {log_measure2(p, f, (uint32_t)i1, (uint32_t)i2); } while(0)
-#define LATSEQ_P5(p, f, i1, i2, i3), do {log_measure3(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3); } while(0)
-#define LATSEQ_P6(p, f, i1, i2, i3, i4), do {log_measure4(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4);} while(0)
-#define LATSEQ_P7(p, f, i1, i2, i3, i4, i5), do {log_measure5(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5); } while(0)
-#define LATSEQ_P8(p, f, i1, i2, i3, i4, i5, i6), do {log_measure6(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6); } while(0)
-#define LATSEQ_P9(p, f, i1, i2, i3, i4, i5, i6, i7), do {log_measure7(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7); } while(0)
-#define LATSEQ_P10(p, f, i1, i2, i3, i4, i5, i6, i7, i8), do {log_measure8(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8); } while(0)
-#define LATSEQ_P11(p, f, i1, i2, i3, i4, i5, i6, i7, i8, i9), do {log_measure9(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8, (uint32_t)i9); } while(0)
-#define LATSEQ_P12(p, f, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10), do {log_measure10(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8, (uint32_t)i9, (uint32_t)i10); } while(0)
+#define LATSEQ_P3(p, f, i1); do {log_measure1(p, f, (uint32_t)i1); } while(0)
+#define LATSEQ_P4(p, f, i1, i2); do {log_measure2(p, f, (uint32_t)i1, (uint32_t)i2); } while(0)
+#define LATSEQ_P5(p, f, i1, i2, i3); do {log_measure3(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3); } while(0)
+#define LATSEQ_P6(p, f, i1, i2, i3, i4); do {log_measure4(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4);} while(0)
+#define LATSEQ_P7(p, f, i1, i2, i3, i4, i5); do {log_measure5(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5); } while(0)
+#define LATSEQ_P8(p, f, i1, i2, i3, i4, i5, i6); do {log_measure6(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6); } while(0)
+#define LATSEQ_P9(p, f, i1, i2, i3, i4, i5, i6, i7); do {log_measure7(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7); } while(0)
+#define LATSEQ_P10(p, f, i1, i2, i3, i4, i5, i6, i7, i8); do {log_measure8(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8); } while(0)
+#define LATSEQ_P11(p, f, i1, i2, i3, i4, i5, i6, i7, i8, i9); do {log_measure9(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8, (uint32_t)i9); } while(0)
+#define LATSEQ_P12(p, f, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10); do {log_measure10(p, f, (uint32_t)i1, (uint32_t)i2, (uint32_t)i3, (uint32_t)i4, (uint32_t)i5, (uint32_t)i6, (uint32_t)i7, (uint32_t)i8, (uint32_t)i9, (uint32_t)i10); } while(0)
 #define GET_MACRO(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,NAME,...) NAME
 #define LATSEQ_P(...) GET_MACRO(__VA_ARGS__, LATSEQ_P12, LATSEQ_P11, LATSEQ_P10, LATSEQ_P9, LATSEQ_P8, LATSEQ_P7, LATSEQ_P6, LATSEQ_P5, LATSEQ_P4, LATSEQ_P3)(__VA_ARGS__)
 #define OCCUPANCY(w, r) (w - r)
