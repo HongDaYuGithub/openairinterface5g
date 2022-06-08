@@ -45,6 +45,9 @@ extern RAN_CONTEXT_t RC;
 #include <stdint.h>
 
 #include <executables/softmodem-common.h>
+#if LATSEQ
+  #include "common/utils/LATSEQ/latseq.h"
+#endif
 
 static nr_rlc_ue_manager_t *nr_rlc_ue_manager;
 
@@ -172,6 +175,11 @@ void mac_rlc_data_ind     (
 	LOG_D(RLC, "RB found! (channel ID %d) \n", channel_idP);
     rb->set_time(rb, nr_rlc_current_time);
     rb->recv_pdu(rb, buffer_pP, tb_sizeP);
+    
+#if LATSEQ
+    LATSEQ_P("U mac.demux--rlc.rx.am", "len%d:rnti:frame%d.UE_id%d.lcid%d", tb_sizeP, rntiP, frameP, UE_id, channel_idP)
+#endif
+    
   } else {
     LOG_E(RLC, "%s:%d:%s: fatal: no RB found (channel ID %d)\n",
           __FILE__, __LINE__, __FUNCTION__, channel_idP);
