@@ -673,11 +673,6 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
           timing_advance,
           sduP,
           rssi);
-          
-#if LATSEQ
-    rx_lcid = ((NR_MAC_SUBHEADER_FIXED *)sduP)->LCID; // does this work for sduP instead of pduP too? 
-    LATSEQ_P("U mac.harq.up--mac.demux", "len%d:rnti:frame%d.slot%d.UE_id%d.lcid%d", sdu_lenP, current_rnti, frameP, slotP, UE_id, rx_lcid)
-#endif    
     
     // if not missed detection (10dB threshold for now)
     if (rssi>0) {
@@ -902,6 +897,11 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
       ra->state = Msg3_retransmission;
     }
   }
+#if LATSEQ
+    rx_lcid = ((NR_MAC_SUBHEADER_FIXED *)sduP)->LCID; // does this work for sduP instead of pduP too? 
+    LATSEQ_P("U mac.harq.up--mac.demux", "len%d:rnti:frame%d.slot%d.UE_id%d.lcid%d", sdu_lenP, current_rnti, frameP, slotP, UE_id, rx_lcid)
+#endif    
+  
 }
 
 long get_K2(NR_ServingCellConfigCommon_t *scc,NR_BWP_Uplink_t *ubwp, int time_domain_assignment, int mu) {
