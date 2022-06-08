@@ -37,9 +37,6 @@
 #include "T.h"
 #include "executables/nr-softmodem.h"
 #include "executables/softmodem-common.h"
-#if LATSEQ
-  #include "common/utils/LATSEQ/latseq.h"
-#endif
 
 #include "assertions.h"
 
@@ -197,9 +194,6 @@ void phy_procedures_gNB_TX(processingData_L1tx_t *msgTx,
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_gNB_TX+offset,0);
 
-#if LATSEQ
-   LATSEQ_P("D mac.harq.down--phy.out.proc","len%d::fm%d.slot%d", txdataF_offset, frame, slot);
-#endif
 
   if (do_meas==1) stop_meas(&msgTx->phy_proc_tx);
 }
@@ -250,9 +244,6 @@ void nr_postDecode(PHY_VARS_gNB *gNB, notifiedFIFO_elt_t *req) {
       nr_fill_indication(gNB,ulsch_harq->frame, ulsch_harq->slot, rdata->ulsch_id, rdata->harq_pid, 0,0);
       //dumpsig=1;
     } else {
-#if LATSEQ
-      LATSEQ_P("I mac.harq.up", "nack%d::harq%d.fm%d.slot%d", ulsch_harq->round, rdata->harq_pid, rdata->frame, ulsch_harq->slot);
-#endif
       LOG_D(PHY,"[gNB %d] ULSCH: Setting NAK for SFN/SF %d/%d (pid %d, ndi %d, status %d, round %d, RV %d, prb_start %d, prb_size %d, TBS %d) r %d\n",
             gNB->Mod_id, ulsch_harq->frame, ulsch_harq->slot,
             rdata->harq_pid, pusch_pdu->pusch_data.new_data_indicator, ulsch_harq->status,
