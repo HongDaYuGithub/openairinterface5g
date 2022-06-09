@@ -2042,7 +2042,7 @@ void nr_check_Msg4_Ack(module_id_t module_id, int CC_id, frame_t frame, sub_fram
         // 3GPP TS 38.331 Section 12 Table 12.1-1: UE performance requirements for RRC procedures for UEs
         const NR_COMMON_channels_t *common_channels = &RC.nrmac[module_id]->common_channels[0];
         const NR_SIB1_t *sib1 = common_channels->sib1 ? common_channels->sib1->message.choice.c1->choice.systemInformationBlockType1 : NULL;
-        const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
+        const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup && UE->CellGroup->spCellConfig ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
         NR_BWP_t *genericParameters = get_dl_bwp_genericParameters(sched_ctrl->active_bwp,
                                                                    common_channels->ServingCellConfigCommon,
                                                                    sib1);
