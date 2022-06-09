@@ -163,10 +163,6 @@ nr_rrc_data_req(
   const pdcp_transmission_mode_t modeP
 );
 
-int
-nr_rrc_mac_remove_ue(module_id_t mod_idP,
-                  rnti_t rntiP);
-
 int8_t nr_mac_rrc_bwp_switch_req(const module_id_t     module_idP,
                                  const frame_t         frameP,
                                  const sub_frame_t     sub_frameP,

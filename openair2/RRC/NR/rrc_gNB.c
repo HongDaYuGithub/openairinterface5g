@@ -1947,6 +1947,10 @@ rrc_gNB_process_RRCReestablishmentComplete(
     LOG_D(NR_RRC, "set security successfully \n");
   }
 
+  uint8_t drb_id_to_setup_start = DRB_configList ? DRB_configList->list.array[0]->drb_Identity : 1;
+  uint8_t nb_drb_to_setup = DRB_configList ? DRB_configList->list.size : ue_context_pP->ue_context.nb_of_pdusessions;
+  long drb_priority[1] = {13}; // For now, we assume only one drb per pdu sessions with a default preiority (will be dynamique in future)
+
   /* Add all NAS PDUs to the list */
   for (i = 0; i < ue_context_pP->ue_context.nb_of_pdusessions; i++) {
 
@@ -1960,7 +1964,9 @@ rrc_gNB_process_RRCReestablishmentComplete(
 
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
-  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb);
+
+  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb, (drb_id_to_setup_start < 2) ? 1 : 0, drb_id_to_setup_start, nb_drb_to_setup, drb_priority);
+
   for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
     cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = CALLOC(1, sizeof(*cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC));
     *cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = NR_RLC_BearerConfig__reestablishRLC_true;
@@ -3026,7 +3032,7 @@ rrc_gNB_decode_dcch(
                     NR_RRCReestablishmentComplete__criticalExtensions_PR_rrcReestablishmentComplete) {
                   rrc_gNB_process_RRCReestablishmentComplete(ctxt_pP, reestablish_rnti, ue_context_p,
                       ul_dcch_msg->message.choice.c1->choice.rrcReestablishmentComplete->rrc_TransactionIdentifier);
-                  mac_remove_nr_ue(ctxt_pP->module_id, reestablish_rnti);
+                  nr_rrc_mac_remove_ue(ctxt_pP->module_id, reestablish_rnti);
                 }
 
                 //ue_context_p->ue_context.ue_release_timer = 0;

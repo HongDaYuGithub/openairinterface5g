@@ -1653,6 +1653,39 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
         uint8_t buffer[CCCH_SDU_SIZE];
         uint8_t mac_subheader_len = sizeof(NR_MAC_SUBHEADER_SHORT);
         uint16_t mac_sdu_length = mac_rrc_nr_data_req(module_idP, CC_id, frameP, CCCH, ra->rnti, 1, buffer);
+        if (mac_sdu_length == 0) {
+          LOG_I(NR_MAC,"No Msg4, check DCCH message for RRCReestablishment 0x%x\n",ra->rnti);
+          sched_ctrl->rlc_status[DL_SCH_LCID_DCCH] = mac_rlc_status_ind(module_idP,
+                                                                        ra->rnti,
+                                                                        module_idP,
+                                                                        frameP,
+                                                                        slotP,
+                                                                        ENB_FLAG_YES,
+                                                                        MBMS_FLAG_NO,
+                                                                        DL_SCH_LCID_DCCH,
+                                                                        0,
+                                                                        0);
+          if (sched_ctrl->rlc_status[DL_SCH_LCID_DCCH].bytes_in_buffer > 0) {
+            mac_sdu_length = mac_rlc_data_req(module_idP,
+                                              ra->rnti,
+                                              module_idP,
+                                              frameP,
+                                              ENB_FLAG_YES,
+                                              MBMS_FLAG_NO,
+                                              DL_SCH_LCID_DCCH,
+                                              sched_ctrl->rlc_status[DL_SCH_LCID_DCCH].bytes_in_buffer,
+                                              (char*)buffer,
+                                              0,
+                                              0);
+            lcid = DL_SCH_LCID_DCCH;
+          } else {
+            LOG_W(NR_MAC, "No Msg4, release ra proc. %04x\n", ra->rnti);
+            mac_remove_nr_ue(nr_mac, ra->rnti);
+            nr_clear_ra_proc(module_idP, CC_id, frameP, ra);
+            return;
+          }
+        }
+
         if (mac_sdu_length < 256) {
           ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->R = 0;
           ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->F = 0;

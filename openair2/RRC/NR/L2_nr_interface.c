@@ -146,13 +146,6 @@ int generate_pdcch_ConfigSIB1(NR_PDCCH_ConfigSIB1_t *pdcch_ConfigSIB1,
   return 0;
 }
 
-int
-nr_rrc_mac_remove_ue(module_id_t mod_idP,
-                  rnti_t rntiP){
-  // todo
-  return 0;
-}
-
 //------------------------------------------------------------------------------
 uint8_t
 nr_rrc_data_req(

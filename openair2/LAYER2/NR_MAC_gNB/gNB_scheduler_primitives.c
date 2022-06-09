@@ -2576,6 +2576,11 @@ void mac_remove_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rnti)
  delete_nr_ue_data(UE, nr_mac->common_channels);
 }
 
+void nr_rrc_mac_remove_ue(module_id_t mod_id, rnti_t rnti) {
+  gNB_MAC_INST *gNB_mac = RC.nrmac[mod_id];
+  mac_remove_nr_ue(gNB_mac, rnti);
+}
+
 void nr_mac_remove_ra_rnti(module_id_t mod_id, rnti_t rnti) {
   // Hack to remove UE in the phy (following the same procedure as in function mac_remove_nr_ue)
   if (pthread_mutex_lock(&rnti_to_remove_mutex)) exit(1);
