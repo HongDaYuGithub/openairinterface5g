@@ -30,9 +30,6 @@
  */
 
 #include "common/utils/nr/nr_common.h"
-#if LATSEQ
-  #include "common/utils/LATSEQ/latseq.h"
-#endif
 /*MAC*/
 #include "NR_MAC_COMMON/nr_mac.h"
 #include "NR_MAC_gNB/nr_mac_gNB.h"
@@ -1461,10 +1458,6 @@ void nr_schedule_ue_spec(module_id_t module_id,
     gNB_mac->TX_req[CC_id].Number_of_PDUs++;
     gNB_mac->TX_req[CC_id].SFN = frame;
     gNB_mac->TX_req[CC_id].Slot = slot;
-    
-#if LATSEQ
-    LATSEQ_P("D mac.mux--mac.txreq","len%d:rnti%d:lcid%d.pduindex%d.harq%d.reqfm%d.slot%d", TBS, rnti, lcid, pduindex, current_harq_pid, frame, slot);
-#endif
 
     /* mark UE as scheduled */
     sched_pdsch->rbSize = 0;
