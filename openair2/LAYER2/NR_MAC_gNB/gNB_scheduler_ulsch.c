@@ -1026,7 +1026,7 @@ static int comparator(const void *p, const void *q) {
 void pf_ul(module_id_t module_id,
            frame_t frame,
            sub_frame_t slot,
-	   NR_UE_info_t *UE_list[],
+           NR_UE_info_t *UE_list[],
            int max_num_ue,
            int n_rb_sched,
            uint16_t *rballoc_mask) {
@@ -1045,11 +1045,13 @@ void pf_ul(module_id_t module_id,
   /* Loop UE_list to calculate throughput and coeff */
   UE_iterator(UE_list, UE) {
 
-    if (UE->Msg4_ACKed != true)
+    NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
+
+    if ((UE->Msg4_ACKed != true) || (sched_ctrl->ul_failure==1 && get_softmodem_params()->phy_test==0)) {
       continue;
+    }
 
     LOG_D(NR_MAC,"pf_ul: preparing UL scheduling for UE %04x\n",UE->rnti);
-    NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
 
     NR_BWP_t *genericParameters = get_ul_bwp_genericParameters(sched_ctrl->active_ubwp,
                                                                scc,
@@ -1087,10 +1089,11 @@ void pf_ul(module_id_t module_id,
       /* reduce max_num_ue once we are sure UE can be allocated, i.e., has CCE */
       remainUEs--;
 
+      // we have filled all with mandatory retransmissions
+      // no need to schedule new transmissions
       if (remainUEs == 0)
-	// we have filled all with mandatory retransmissions
-	// no need to schedule new transmissions
-	return;
+        return;
+
       continue;
     } 
     const int B = max(0, sched_ctrl->estimated_ul_buffer - sched_ctrl->sched_ul_bytes);
@@ -1113,12 +1116,12 @@ void pf_ul(module_id_t module_id,
       const uint32_t Y = get_Y(sched_ctrl->search_space, slot, UE->rnti);
       uint8_t nr_of_candidates;
       for (int i=0; i<5; i++) {
-	// for now taking the lowest value among the available aggregation levels
-	find_aggregation_candidates(&sched_ctrl->aggregation_level,
-				    &nr_of_candidates,
-				    sched_ctrl->search_space,
-				    1<<i);
-	if(nr_of_candidates>0) break;
+        // for now taking the lowest value among the available aggregation levels
+        find_aggregation_candidates(&sched_ctrl->aggregation_level,
+                                    &nr_of_candidates,
+                                    sched_ctrl->search_space,
+                                    1<<i);
+        if(nr_of_candidates>0) break;
       }
       int CCEIndex = find_pdcch_candidate(RC.nrmac[module_id],
 					  CC_id,
@@ -1129,8 +1132,8 @@ void pf_ul(module_id_t module_id,
 					  Y);
       
       if (CCEIndex<0) {
-	LOG_D(NR_MAC, "%4d.%2d no free CCE for UL DCI UE %04x (BSR 0)\n", frame, slot, UE->rnti);
-	continue;
+        LOG_D(NR_MAC, "%4d.%2d no free CCE for UL DCI UE %04x (BSR 0)\n", frame, slot, UE->rnti);
+        continue;
       }
       /* reduce max_num_ue once we are sure UE can be allocated, i.e., has CCE */
       remainUEs--;
