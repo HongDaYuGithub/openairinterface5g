@@ -177,7 +177,7 @@ void mac_rlc_data_ind     (
     rb->recv_pdu(rb, buffer_pP, tb_sizeP);
     
 #if LATSEQ
-    LATSEQ_P("U mac.demux--rlc.rx.am", "len%d:rnti:frame%d.UE_id_rnti%d.lcid%d", tb_sizeP, rntiP, frameP, ue->rnti, channel_idP)
+    LATSEQ_P("U mac.demux--rlc.rx.am", "len%d:rnti%d:frame%d.UE_id_rnti%d.lcid%d", tb_sizeP, rntiP, frameP, ue->rnti, channel_idP)
 #endif
     
   } else {
