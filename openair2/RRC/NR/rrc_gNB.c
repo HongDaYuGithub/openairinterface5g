@@ -1943,12 +1943,12 @@ rrc_gNB_process_RRCReestablishmentComplete(
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
 
   if (AMF_MODE_ENABLED) {
-    nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 0);
+    nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 1);
     LOG_D(NR_RRC, "set security successfully \n");
   }
 
   uint8_t drb_id_to_setup_start = DRB_configList ? DRB_configList->list.array[0]->drb_Identity : 1;
-  uint8_t nb_drb_to_setup = DRB_configList ? DRB_configList->list.size : ue_context_pP->ue_context.nb_of_pdusessions;
+  uint8_t nb_drb_to_setup = DRB_configList ? DRB_configList->list.count : ue_context_pP->ue_context.nb_of_pdusessions;
   long drb_priority[1] = {13}; // For now, we assume only one drb per pdu sessions with a default preiority (will be dynamique in future)
 
   /* Add all NAS PDUs to the list */
