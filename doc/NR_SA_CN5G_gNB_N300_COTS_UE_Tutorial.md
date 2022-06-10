@@ -23,6 +23,7 @@
 3. [OAI gNB](#3-oai-gnb)
     1. [OAI gNB pre-requisites](#31-oai-gnb-pre-requisites)
     2. [Build OAI gNB](#32-build-oai-gnb)
+    3. [N300 Ethernet Tuning](#33-n300-ethernet-tuning)
 4. [Run OAI CN5G and OAI gNB with USRP N300](#4-run-oai-cn5g-and-oai-gnb-with-usrp-n300)
     1. [Run OAI CN5G](#41-run-oai-cn5g)
     2. [Run OAI gNB](#42-run-oai-gnb)
@@ -33,7 +34,7 @@
 
 
 #  1. Scenario
-In the following tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and a COTS UE.
+In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and COTS UE.
 
 Minimum hardware requirements:
 - Laptop/Desktop/Server for OAI CN5G and OAI gNB
@@ -45,7 +46,7 @@ Minimum hardware requirements:
     - CPU: 4 cores x86_64
     - RAM: 8 GB
     - Windows driver for Quectel MUST be equal or higher than version **2.2.4**
-- [USRP N300](https://www.ettus.com/all-products/USRP-N300/)
+- [USRP N300](https://www.ettus.com/all-products/USRP-N300/): Please identify the network interface(s) on which the N300 is connected.
 - Quectel RM500Q
     - Module, M.2 to USB adapter, antennas and SIM card
     - Firmware version of Quectel MUST be equal or higher than **RM500QGLABR11A06M4G**
@@ -118,7 +119,7 @@ chmod 644 ~/oai-cn5g-fed/docker-compose/oai_db.sql
 ```
 
 ## 2.4  SIM Card
-Program SIM Card with [Open Cells Project](https://open-cells.com/) application [uicc-v2.5](https://open-cells.com/d5138782a8739209ec5760865b1e53b0/uicc-v2.5.tgz).
+Program SIM Card with [Open Cells Project](https://open-cells.com/) application [uicc-v2.6](https://open-cells.com/d5138782a8739209ec5760865b1e53b0/uicc-v2.6.tgz).
 
 ```bash
 sudo ./program_uicc --adm 12345678 --imsi 208990000000001 --isdn 00000001 --acc 0001 --key fec86ba6eb707ed08905757b1bb44b8f --opc C42449363BBAD02B66D16BC975D77CC1 -spn "OpenAirInterface" --authenticate
@@ -168,6 +169,23 @@ cd cmake_targets
 ./build_oai -w USRP --nrUE --gNB --build-lib all -c
 ```
 
+## 3.3 N300 Ethernet Tuning
+
+Please also refer to the official [USRP Host Performance Tuning Tips and Tricks](https://kb.ettus.com/USRP_Host_Performance_Tuning_Tips_and_Tricks) tuning guide.
+
+The following steps are recommended. Please change the network interface(s) as required. Also, you should have 10Gbps interface(s): if you use two cables, you should have the XG interface. Refer to the [N300 Getting Started Guide](https://kb.ettus.com/USRP_N300/N310/N320/N321_Getting_Started_Guide) for more information.
+
+* Use an MTU of 9000: how to change this depends on the network management tool. In the case of Network Manager, this can be done from the GUI.
+* Increase the kernel socket buffer (also done by the USRP driver in OAI):
+  ```
+  sysctl -w net.core.rmem_max=8388608
+  sysctl -w net.core.wmem_max=8388608
+  sysctl -w net.core.rmem_default=65536
+  sysctl -w net.core.wmem_default=65536
+  ```
+* Increase Ethernet Ring Buffers: `sudo ethtool -G <ifname> rx 4096 tx 4096`
+* Disable hyper-threading in the BIOS
+* Disable KPTI Protections for Spectre/Meltdown for more performance. **This is a security risk.** Add `mitigations=off nosmt` in your grub config and update grub.
 
 # 4. Run OAI CN5G and OAI gNB with USRP N300
 
@@ -184,7 +202,7 @@ python3 core-network.py --type start-basic --fqdn yes --scenario 1
 cd ~/openairinterface5g
 source oaienv
 cd cmake_targets/ran_build/build
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.162PRB.2x2.usrpn300.conf --sa --usrp-tx-thread-config 1 --thread-pool 0,2,4,6
+sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.162PRB.2x2.usrpn300.conf --sa --usrp-tx-thread-config 1
 ```
 
 
@@ -202,7 +220,7 @@ AT+CGDCONT=2
 AT+CGDCONT=3
 AT+CGDCONT=1,"IP","oai"
 
-# Activate PDP context, retrieve IP address and test with ping
+# (Optional, debug only, AT commands) Activate PDP context, retrieve IP address and test with ping
 AT+CGACT=1,1
 AT+CGPADDR=1
 AT+QPING=1,"openairinterface.org"
@@ -224,10 +242,10 @@ docker exec -it oai-ext-dn ping 12.1.1.2
     - Extract to Desktop and run with Command Prompt:
 ```bash
 cd C:\Users\User\Desktop\iPerf\iperf-2.0.9-win64\iperf-2.0.9-win64
-iperf -s -u -i 1 -p 5002 -B 12.1.1.2
+iperf -s -u -i 1 -B 12.1.1.2
 ```
 
 - CN5G host
 ```bash
-docker exec -it oai-ext-dn iperf -u -t 86400 -i 1 -fk -B 192.168.70.135 -p 5002 -b 200M -c 12.1.1.2
+docker exec -it oai-ext-dn iperf -u -t 86400 -i 1 -fk -B 192.168.70.135 -b 200M -c 12.1.1.2
 ```

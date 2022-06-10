@@ -33,7 +33,7 @@
 
 
 # 1. Scenario
-In the following tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and a COTS UE.
+In this tutorial we describe how to configure and run a 5G end-to-end setup with OAI CN5G, OAI gNB and COTS UE.
 
 Minimum hardware requirements:
 - Laptop/Desktop/Server for OAI CN5G and OAI gNB
@@ -118,7 +118,7 @@ chmod 644 ~/oai-cn5g-fed/docker-compose/oai_db.sql
 ```
 
 ## 2.4 SIM Card
-Program SIM Card with [Open Cells Project](https://open-cells.com/) application [uicc-v2.5](https://open-cells.com/d5138782a8739209ec5760865b1e53b0/uicc-v2.5.tgz).
+Program SIM Card with [Open Cells Project](https://open-cells.com/) application [uicc-v2.6](https://open-cells.com/d5138782a8739209ec5760865b1e53b0/uicc-v2.6.tgz).
 
 ```bash
 sudo ./program_uicc --adm 12345678 --imsi 208990000000001 --isdn 00000001 --acc 0001 --key fec86ba6eb707ed08905757b1bb44b8f --opc C42449363BBAD02B66D16BC975D77CC1 -spn "OpenAirInterface" --authenticate
@@ -187,6 +187,7 @@ cd cmake_targets/ran_build/build
 sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band78.fr1.106PRB.usrpb210.conf --sa -E --continuous-tx
 ```
 
+Make sure that during USRP initialization, it shows that USB 3 is used.
 
 # 5. Testing with Quectel RM500Q
 
@@ -202,7 +203,7 @@ AT+CGDCONT=2
 AT+CGDCONT=3
 AT+CGDCONT=1,"IP","oai"
 
-# Activate PDP context, retrieve IP address and test with ping
+# (Optional, debug only, AT commands) Activate PDP context, retrieve IP address and test with ping
 AT+CGACT=1,1
 AT+CGPADDR=1
 AT+QPING=1,"openairinterface.org"
@@ -224,10 +225,10 @@ docker exec -it oai-ext-dn ping 12.1.1.2
     - Extract to Desktop and run with Command Prompt:
 ```bash
 cd C:\Users\User\Desktop\iPerf\iperf-2.0.9-win64\iperf-2.0.9-win64
-iperf -s -u -i 1 -p 5002 -B 12.1.1.2
+iperf -s -u -i 1 -B 12.1.1.2
 ```
 
 - CN5G host
 ```bash
-docker exec -it oai-ext-dn iperf -u -t 86400 -i 1 -fk -B 192.168.70.135 -p 5002 -b 125M -c 12.1.1.2
+docker exec -it oai-ext-dn iperf -u -t 86400 -i 1 -fk -B 192.168.70.135 -b 125M -c 12.1.1.2
 ```

@@ -160,7 +160,8 @@ void nr_schedule_css_dlsch_phytest(module_id_t   module_idP,
                                                     scc->dmrs_TypeA_Position,
                                                     NrOfSymbols,
                                                     StartSymbolIndex,
-                                                    mappingtype, 1);
+                                                    mappingtype,
+                                                    1);
 
     nr_mac->DL_req[CC_id].dl_tti_request_body.nPDUs+=2;
     
@@ -307,6 +308,7 @@ void nr_preprocessor_phytest(module_id_t module_id,
   sched_pdsch->rbSize = rbSize;
 
   sched_pdsch->mcs = target_dl_mcs;
+  sched_ctrl->dl_bler_stats.mcs = target_dl_mcs; /* for logging output */
   sched_pdsch->Qm = nr_get_Qm_dl(sched_pdsch->mcs, ps->mcsTableIdx);
   sched_pdsch->R = nr_get_code_rate_dl(sched_pdsch->mcs, ps->mcsTableIdx);
   sched_pdsch->tb_size = nr_compute_tbs(sched_pdsch->Qm,
@@ -456,6 +458,7 @@ bool nr_ul_preprocessor_phytest(module_id_t module_id, frame_t frame, sub_frame_
   const int mcs = target_ul_mcs;
   NR_sched_pusch_t *sched_pusch = &sched_ctrl->sched_pusch;
   sched_pusch->mcs = mcs;
+  sched_ctrl->ul_bler_stats.mcs = mcs; /* for logging output */
   sched_pusch->rbStart = rbStart;
   sched_pusch->rbSize = rbSize;
   /* get the PID of a HARQ process awaiting retransmission, or -1 for "any new" */

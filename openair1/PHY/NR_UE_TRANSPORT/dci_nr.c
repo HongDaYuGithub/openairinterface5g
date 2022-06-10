@@ -684,9 +684,9 @@ int32_t nr_rx_pdcch(PHY_VARS_NR_UE *ue,
 
   // Pointers to extracted PDCCH symbols in frequency-domain.
   int32_t rx_size = 4*273*12;
-  int32_t rxdataF_ext[4*frame_parms->nb_antennas_rx][rx_size];
-  int32_t rxdataF_comp[4*frame_parms->nb_antennas_rx][rx_size];
-  int32_t pdcch_dl_ch_estimates_ext[4*frame_parms->nb_antennas_rx][rx_size];
+  __attribute__ ((aligned(32))) int32_t rxdataF_ext[4*frame_parms->nb_antennas_rx][rx_size];
+  __attribute__ ((aligned(32))) int32_t rxdataF_comp[4*frame_parms->nb_antennas_rx][rx_size];
+  __attribute__ ((aligned(32))) int32_t pdcch_dl_ch_estimates_ext[4*frame_parms->nb_antennas_rx][rx_size];
 
   // Pointer to llrs, 4-bit resolution.
   int32_t llr_size = 2*4*100*12;
@@ -918,7 +918,7 @@ uint8_t nr_dci_decoding_procedure(PHY_VARS_NR_UE *ue,
               proc->frame_rx, proc->nr_slot_rx,n_rnti,nr_dci_format_string[rel15->dci_format_options[k]],CCEind,dci_length,*(unsigned long long*)dci_estimation);
         uint16_t mb = nr_dci_false_detection(dci_estimation,tmp_e,L*108,n_rnti, NR_POLAR_DCI_MESSAGE_TYPE, dci_length, L);
         ue->dci_thres = (ue->dci_thres + mb) / 2;
-        if (mb > (ue->dci_thres+20)) {
+        if (mb > (ue->dci_thres+30)) {
           LOG_W(PHY,"DCI false positive. Dropping DCI index %d. Mismatched bits: %d/%d. Current DCI threshold: %d\n",j,mb,L*108,ue->dci_thres);
           continue;
         }
