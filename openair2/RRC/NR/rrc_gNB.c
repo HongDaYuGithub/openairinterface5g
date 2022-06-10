@@ -1051,9 +1051,8 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
   }
 
   cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
-  fill_mastercellGroupConfig(cellGroupConfig,
-                             ue_context_pP->ue_context.masterCellGroup,
-                             rrc->um_on_default_drb);
+  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb, (drb_id_to_setup_start < 2) ? 1 : 0, drb_id_to_setup_start, nb_drb_to_setup, drb_priority);
+
   size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                 xid,
                                 *SRB_configList2,
@@ -1970,9 +1969,13 @@ rrc_gNB_process_RRCReestablishmentComplete(
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
 
   if (AMF_MODE_ENABLED) {
-    nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 0);
+    nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 1);
     LOG_D(NR_RRC, "set security successfully \n");
   }
+
+  uint8_t drb_id_to_setup_start = DRB_configList ? DRB_configList->list.array[0]->drb_Identity : 1;
+  uint8_t nb_drb_to_setup = DRB_configList ? DRB_configList->list.count : ue_context_pP->ue_context.nb_of_pdusessions;
+  long drb_priority[1] = {13}; // For now, we assume only one drb per pdu sessions with a default preiority (will be dynamique in future)
 
   /* Add all NAS PDUs to the list */
   for (i = 0; i < ue_context_pP->ue_context.nb_of_pdusessions; i++) {
@@ -1987,7 +1990,9 @@ rrc_gNB_process_RRCReestablishmentComplete(
 
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
-  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb);
+
+  fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb, (drb_id_to_setup_start < 2) ? 1 : 0, drb_id_to_setup_start, nb_drb_to_setup, drb_priority);
+
   for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
     cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = CALLOC(1, sizeof(*cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC));
     *cellGroupConfig->rlc_BearerToAddModList->list.array[i]->reestablishRLC = NR_RLC_BearerConfig__reestablishRLC_true;
@@ -2008,8 +2013,7 @@ rrc_gNB_process_RRCReestablishmentComplete(
                                NULL,
                                cellGroupConfig);
 
-  LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)buffer,size,
-              "[MSG] RRC Reconfiguration\n");
+  LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)buffer,size, "[MSG] RRC Reconfiguration\n");
 
   /* Free all NAS PDUs */
   for (i = 0; i < ue_context_pP->ue_context.nb_of_pdusessions; i++) {
