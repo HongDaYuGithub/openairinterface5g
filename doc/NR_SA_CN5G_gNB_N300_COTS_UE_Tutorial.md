@@ -96,6 +96,7 @@ docker pull oaisoftwarealliance/oai-ausf:develop
 docker pull oaisoftwarealliance/oai-upf-vpp:develop
 docker pull oaisoftwarealliance/oai-spgwu-tiny:develop
 docker pull oaisoftwarealliance/oai-nssf:develop
+docker pull oaisoftwarealliance/trf-gen-cn5g:latest
 
 docker image tag oaisoftwarealliance/oai-amf:develop oai-amf:develop
 docker image tag oaisoftwarealliance/oai-nrf:develop oai-nrf:develop
@@ -106,6 +107,7 @@ docker image tag oaisoftwarealliance/oai-ausf:develop oai-ausf:develop
 docker image tag oaisoftwarealliance/oai-upf-vpp:develop oai-upf-vpp:develop
 docker image tag oaisoftwarealliance/oai-spgwu-tiny:develop oai-spgwu-tiny:develop
 docker image tag oaisoftwarealliance/oai-nssf:develop oai-nssf:develop
+docker image tag oaisoftwarealliance/trf-gen-cn5g:latest trf-gen-cn5g:latest
 ```
 
 ## 2.3 OAI CN5G Configuration files
