@@ -95,6 +95,7 @@ docker pull oaisoftwarealliance/oai-ausf:develop
 docker pull oaisoftwarealliance/oai-upf-vpp:develop
 docker pull oaisoftwarealliance/oai-spgwu-tiny:develop
 docker pull oaisoftwarealliance/oai-nssf:develop
+docker pull oaisoftwarealliance/trf-gen-cn5g:latest
 
 docker image tag oaisoftwarealliance/oai-amf:develop oai-amf:develop
 docker image tag oaisoftwarealliance/oai-nrf:develop oai-nrf:develop
@@ -105,16 +106,19 @@ docker image tag oaisoftwarealliance/oai-ausf:develop oai-ausf:develop
 docker image tag oaisoftwarealliance/oai-upf-vpp:develop oai-upf-vpp:develop
 docker image tag oaisoftwarealliance/oai-spgwu-tiny:develop oai-spgwu-tiny:develop
 docker image tag oaisoftwarealliance/oai-nssf:develop oai-nssf:develop
+docker image tag oaisoftwarealliance/trf-gen-cn5g:latest trf-gen-cn5g:latest
 ```
 
 ## 2.3 OAI CN5G Configuration files
-Download and copy the configuration files to ~/oai-cn5g-fed/docker-compose:
+Download and copy docker-compose file to ~/oai-cn5g-fed/docker-compose
 - [docker-compose-basic-nrf.yaml](tutorial_resources/docker-compose-basic-nrf.yaml)
+
+Download and copy database file to ~/oai-cn5g-fed/docker-compose/database
 - [oai_db.sql](tutorial_resources/oai_db.sql)
 
 Change permissions on oai_db.sql to prevent mysql permission denied error:
 ```bash
-chmod 644 ~/oai-cn5g-fed/docker-compose/oai_db.sql
+chmod 644 ~/oai-cn5g-fed/docker-compose/database/oai_db.sql
 ```
 
 ## 2.4 SIM Card
@@ -175,7 +179,7 @@ cd cmake_targets
 
 ```bash
 cd ~/oai-cn5g-fed/docker-compose
-python3 core-network.py --type start-basic --fqdn yes --scenario 1
+python3 core-network.py --type start-basic --scenario 1
 ```
 
 ## 4.2 Run OAI gNB
