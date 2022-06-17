@@ -679,7 +679,7 @@ int main(int argc, char **argv)
       //target_error_rate=0.1;
       slot = 0;
       break;
-      
+
     default:
     case 'h':
       printf("%s -h(elp) -p(extended_prefix) -N cell_id -f output_filename -F input_filename -g channel_model -n n_frames -s snr0 -S snr1 -x transmission_mode -y TXant -z RXant -i Intefrence0 -j Interference1 -A interpolation_file -C(alibration offset dB) -N CellId\n",
@@ -1347,7 +1347,7 @@ int main(int argc, char **argv)
       }
       
       ////////////////////////////////////////////////////////////
-      
+
       if (errors_bit > 0) {
 	n_false_positive++;
 	if (n_trials == 1)
