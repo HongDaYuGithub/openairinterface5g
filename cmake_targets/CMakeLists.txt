@@ -251,8 +251,8 @@ set(CMAKE_CXX_FLAGS
 
 add_boolean_option(SANITIZE_ADDRESS False "enable the address sanitizer (ASan)")
 if (SANITIZE_ADDRESS)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-common")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer -fno-common")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address  -fno-omit-frame-pointer -fno-common")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address  -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -fno-common")
   # There seems to be some incompatibility with pthread_create and the RT scheduler, which
   # results in pthread_create hanging.
   #
@@ -269,6 +269,12 @@ if (SANITIZE_ADDRESS)
   #
   # Google searching indicates this appears to be a problem since at least 2018. This could be something
   # wrong in the pthread library, or something subtly wrong in this CMakeLists.txt. Use Ubuntu 20.04 instead.
+endif ()
+
+add_boolean_option(SANITIZE_UNDEFINED False "enable the undefined behavior sanitizer (UBSan)")
+if (SANITIZE_UNDEFINED)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined -fno-sanitize-recover=all")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fno-sanitize-recover=all")
 endif ()
 
 add_definitions("-DASN_DISABLE_OER_SUPPORT")
