@@ -129,6 +129,8 @@ typedef enum {
 #define GNB_CONFIG_STRING_ENABLE_SDAP                   "enable_sdap"
 #define GNB_CONFIG_HLP_STRING_ENABLE_SDAP               "enable the SDAP layer\n"
 #define GNB_CONFIG_HLP_FORCE256QAMOFF                   "suppress activation of 256 QAM despite UE support"
+#define GNB_CONFIG_STRING_DRBS                          "drbs"
+#define GNB_CONFIG_HLP_STRING_DRBS                      "Data Radio Bearer count (default=1)\n"
 
 /*-----------------------------------------------------------------------------------------------------------------------------------------*/
 /*                                            cell configuration parameters                                                                */
@@ -162,7 +164,8 @@ typedef enum {
 {GNB_CONFIG_STRING_ULPRBBLACKLIST,               NULL,   0,            strptr:NULL, defstrval:"",                TYPE_STRING,    0},  \
 {GNB_CONFIG_STRING_UMONDEFAULTDRB,               NULL,   0,            uptr:NULL,   defuintval:0,                 TYPE_UINT,   0},   \
 {GNB_CONFIG_STRING_FORCE256QAMOFF, GNB_CONFIG_HLP_FORCE256QAMOFF, PARAMFLAG_BOOL, iptr:NULL, defintval:0,        TYPE_INT,       0},  \
-{GNB_CONFIG_STRING_ENABLE_SDAP, GNB_CONFIG_HLP_STRING_ENABLE_SDAP, PARAMFLAG_BOOL, iptr:NULL, defintval:0,       TYPE_INT,       0}  \
+{GNB_CONFIG_STRING_ENABLE_SDAP, GNB_CONFIG_HLP_STRING_ENABLE_SDAP, PARAMFLAG_BOOL, iptr:NULL, defintval:0,       TYPE_INT,       0},  \
+{GNB_CONFIG_STRING_DRBS, GNB_CONFIG_HLP_STRING_DRBS,     0,            iptr:NULL,   defintval:1,                 TYPE_INT,       0},  \
 }
 
 #define GNB_GNB_ID_IDX                  0
@@ -193,6 +196,7 @@ typedef enum {
 #define GNB_UMONDEFAULTDRB_IDX          25
 #define GNB_FORCE256QAMOFF_IDX          26
 #define GNB_ENABLE_SDAP_IDX             27
+#define GNB_DRBS                        28
 
 #define TRACKING_AREA_CODE_OKRANGE {0x0001,0xFFFD}
 #define GNBPARAMS_CHECK {                                         \
