@@ -103,6 +103,7 @@ typedef struct nr_uid_linear_allocator_s {
 
 #define NR_UE_MODULE_INVALID ((module_id_t) ~0) // FIXME attention! depends on type uint8_t!!!
 #define NR_UE_INDEX_INVALID  ((module_id_t) ~0) // FIXME attention! depends on type uint8_t!!! used to be -1
+#define MAX_DRB_PER_PDUSESSION 4
 
 typedef enum {
   NR_RRC_OK=0,
