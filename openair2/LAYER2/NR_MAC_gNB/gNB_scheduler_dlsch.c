@@ -1108,7 +1108,8 @@ void nr_schedule_ue_spec(module_id_t module_id,
     pdsch_pdu->StartSymbolIndex = ps->startSymbolIndex;
     pdsch_pdu->NrOfSymbols = ps->nrOfSymbols;
     // Precoding
-    if (sched_ctrl->set_pmi) {
+    //  && nrOfLayers == set_dl_nrOfLayers(sched_ctrl): Temporary fix to avoid a segmentation fault when there is a change in the number of layers
+    if (sched_ctrl->set_pmi && nrOfLayers == set_dl_nrOfLayers(sched_ctrl)) {
       const int report_id = sched_ctrl->CSI_report.cri_ri_li_pmi_cqi_report.csi_report_id;
       nr_csi_report_t *csi_report = &UE->csi_report_template[report_id];
       pdsch_pdu->precodingAndBeamforming.prg_size = pdsch_pdu->rbSize;
