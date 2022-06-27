@@ -1646,22 +1646,22 @@ rrc_gNB_generate_RRCReestablishment(
   module_id_t                module_id = ctxt_pP->module_id;
   uint8_t                    buffer[RRC_BUF_SIZE];
   uint16_t                   size  = 0;
-  gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
+  gNB_RRC_INST               *rrc = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
 
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
   size = do_RRCReestablishment(ctxt_pP,
-      ue_context_pP,
-      CC_id,
-      buffer,
-      RRC_BUF_SIZE,
-      //(uint8_t) carrier->p_gNB, // at this point we do not have the UE capability information, so it can only be TM1 or TM2
-      rrc_gNB_get_next_transaction_identifier(module_id),
-      SRB_configList,
-      masterCellGroup_from_DU,
-      scc,&rrc_instance_p->carrier);
+                               ue_context_pP,
+                               CC_id,
+                               buffer,
+                               RRC_BUF_SIZE,
+                               rrc_gNB_get_next_transaction_identifier(module_id),
+                               SRB_configList,
+                               masterCellGroup_from_DU,
+                               scc,
+                               &rrc->carrier);
 
   /* Configure SRB1 for UE */
   if (*SRB_configList != NULL) {
@@ -1746,8 +1746,8 @@ rrc_gNB_generate_RRCReestablishment(
         kRRCenc,
         kRRCint,
         kUPenc);
-    if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
-      apply_macrlc_config_reest(RC.nrrrc[ctxt_pP->module_id],ue_context_pP,ctxt_pP,ctxt_pP->rnti);
+    if (!NODE_IS_CU(rrc->node_type)) {
+      apply_macrlc_config_reest(rrc,ue_context_pP,ctxt_pP,ctxt_pP->rnti);
     }
     nr_rrc_data_req(ctxt_pP,
                 DCCH,
@@ -1756,6 +1756,32 @@ rrc_gNB_generate_RRCReestablishment(
                 size,
                 buffer,
                 PDCP_TRANSMISSION_MODE_CONTROL);
+
+  if (NODE_IS_DU(rrc->node_type) || NODE_IS_MONOLITHIC(rrc->node_type)) {
+    gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
+    rrc_mac_config_req_gNB(rrc->module_id,
+                           rrc->configuration.pdsch_AntennaPorts,
+                           rrc->configuration.pusch_AntennaPorts,
+                           rrc->configuration.sib1_tda,
+                           rrc->configuration.minRXTXTIME,
+                           NULL,
+                           NULL,
+                           NULL,
+                           0,
+                           ue_p->rnti,
+                           ue_p->masterCellGroup);
+
+    uint32_t delay_ms = ue_context_pP->ue_context.masterCellGroup &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig->spCellConfigDedicated &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig->spCellConfigDedicated->downlinkBWP_ToAddModList ?
+                        NR_RRC_RECONFIGURATION_DELAY_MS + NR_RRC_BWP_SWITCHING_DELAY_MS : NR_RRC_RECONFIGURATION_DELAY_MS;
+
+    nr_mac_enable_ue_rrc_processing_timer(ctxt_pP->module_id,
+                                          ue_context_pP->ue_context.rnti,
+                                          *rrc->carrier.servingcellconfigcommon->ssbSubcarrierSpacing,
+                                          delay_ms);
+  }
 #endif
 
 }
