@@ -310,7 +310,6 @@ void apply_macrlc_config_reest(gNB_RRC_INST *rrc,
                          int rnti) {
 
       rrc_mac_config_req_gNB(rrc->module_id,
-                             rrc->configuration.ssb_SubcarrierOffset,
                              rrc->configuration.pdsch_AntennaPorts,
                              rrc->configuration.pusch_AntennaPorts,
                              rrc->configuration.sib1_tda,
@@ -651,7 +650,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t                       buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                       buffer[RRC_BUF_SIZE];
   uint16_t                      size;
   /*NR_SRB_ToAddModList_t        **SRB_configList2 = NULL;
   NR_SRB_ToAddModList_t        *SRB_configList  = ue_context_pP->ue_context.SRB_configList;
@@ -898,7 +897,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                        buffer[RRC_BUF_SIZE];
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int                            pdu_sessions_done = 0;
@@ -1061,7 +1060,6 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
     dedicatedNAS_MessageList = NULL;
   }
 
-  memset(buffer, 0, sizeof(buffer));
   if(cell_groupConfig_from_DU == NULL){
     cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
     // FIXME: fill_mastercellGroupConfig() won't fill the right priorities or
@@ -1073,7 +1071,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
     cellGroupConfig = cell_groupConfig_from_DU;
   }
 
-  size = do_RRCReconfiguration(ctxt_pP, buffer, sizeof(buffer),
+  size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                 xid,
                                 *SRB_configList2,
                                 *DRB_configList,
@@ -1165,7 +1163,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                        buffer[RRC_BUF_SIZE];
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int i, j;
@@ -1347,7 +1345,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
     uint8_t                 *nas_buffer)
 //-----------------------------------------------------------------------------
 {
-  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                             buffer[RRC_BUF_SIZE];
   int                                 i;
   uint16_t                            size  = 0;
   NR_DRB_ToReleaseList_t             **DRB_Release_configList2 = NULL;
@@ -1646,7 +1644,7 @@ rrc_gNB_generate_RRCReestablishment(
   NR_SRB_ToAddModList_t      **SRB_configList;
   gNB_RRC_UE_t               *ue_context = NULL;
   module_id_t                module_id = ctxt_pP->module_id;
-  uint8_t                    buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                    buffer[RRC_BUF_SIZE];
   uint16_t                   size  = 0;
   gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
@@ -1784,7 +1782,7 @@ rrc_gNB_process_RRCReestablishmentComplete(
   NR_DRB_ToAddMod_t                     *DRB_config      = NULL;
   //NR_SDAP_Config_t                      *sdap_config     = NULL;
   int i = 0;
-  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                             buffer[RRC_BUF_SIZE];
   uint16_t                            size;
 
   uint8_t next_xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
@@ -1975,17 +1973,17 @@ rrc_gNB_process_RRCReestablishmentComplete(
   size = do_RRCReconfiguration(ctxt_pP, buffer, RRC_BUF_SIZE,
                                next_xid,
                                *SRB_configList2,
-                                DRB_configList,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL, // MeasObj_list,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL);
+                               DRB_configList,
+                               NULL,
+                               NULL,
+                               NULL,
+                               NULL, // MeasObj_list,
+                               NULL,
+                               ue_context_pP,
+                               &rrc->carrier,
+                               NULL,
+                               NULL,
+                               cellGroupConfig);
 
   LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)buffer,size, "[MSG] RRC Reconfiguration\n");
 
@@ -2051,7 +2049,6 @@ int nr_rrc_reconfiguration_req(rrc_gNB_ue_context_t         *const ue_context_pP
                                const int                    ul_bwp_id) {
 
   uint8_t buffer[RRC_BUF_SIZE];
-  memset(buffer, 0, sizeof(buffer));
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
 
   NR_CellGroupConfig_t *masterCellGroup = ue_context_pP->ue_context.masterCellGroup;
@@ -2065,7 +2062,7 @@ int nr_rrc_reconfiguration_req(rrc_gNB_ue_context_t         *const ue_context_pP
 
   uint16_t  size = do_RRCReconfiguration(ctxt_pP,
                                          buffer,
-                                         sizeof(buffer),
+                                         RRC_BUF_SIZE,
                                          xid,
                                          NULL,
                                          NULL,
@@ -4368,6 +4365,7 @@ void *rrc_gnb_task(void *args_p) {
       case NGAP_UE_CONTEXT_RELEASE_COMMAND:
         rrc_gNB_process_NGAP_UE_CONTEXT_RELEASE_COMMAND(msg_p, msg_name_p, instance);
         break;
+
       case NGAP_PAGING_IND:
           rrc_gNB_process_PAGING_IND(msg_p, msg_name_p, instance);
         break;
@@ -4547,10 +4545,10 @@ rrc_gNB_generate_RRCRelease(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t buffer[RRC_BUF_SIZE] = {0};
+  uint8_t buffer[RRC_BUF_SIZE];
   uint16_t size = 0;
 
-  size = do_NR_RRCRelease(buffer, sizeof(buffer),
+  size = do_NR_RRCRelease(buffer, RRC_BUF_SIZE,
                           rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id));
   ue_context_pP->ue_context.ue_reestablishment_timer = 0;
   ue_context_pP->ue_context.ue_release_timer = 0;

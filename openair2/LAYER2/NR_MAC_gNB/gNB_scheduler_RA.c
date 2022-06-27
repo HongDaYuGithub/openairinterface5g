@@ -1562,7 +1562,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
       ra->rnti = ra->crnti;
     }
 
-    NR_UE_info_t * UE = find_nr_UE(&nr_mac->UE_info, ra->rnti);
+    NR_UE_info_t *UE = find_nr_UE(&nr_mac->UE_info, ra->rnti);
     if (!UE) {
         LOG_E(NR_MAC,"want to generate Msg4, but rnti %04x not in the table\n", ra->rnti);
         return;
@@ -1651,7 +1651,10 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
         uint16_t mac_pdu_length = nr_write_ce_dlsch_pdu(module_idP, nr_mac->sched_ctrlCommon, buf, 255, ra->cont_res_id);
         LOG_D(NR_MAC,"Encoded contention resolution mac_pdu_length %d\n",mac_pdu_length);
         uint8_t buffer[CCCH_SDU_SIZE];
+        uint8_t lcid = DL_SCH_LCID_CCCH;
         uint8_t mac_subheader_len = sizeof(NR_MAC_SUBHEADER_SHORT);
+
+        // Checking Msg4 data (RRCSetup/RRCResume/RRCReestablishment)
         uint16_t mac_sdu_length = mac_rrc_nr_data_req(module_idP, CC_id, frameP, CCCH, ra->rnti, 1, buffer);
         if (mac_sdu_length == 0) {
           LOG_I(NR_MAC,"No Msg4, check DCCH message for RRCReestablishment 0x%x\n",ra->rnti);
@@ -1689,14 +1692,14 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
         if (mac_sdu_length < 256) {
           ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->R = 0;
           ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->F = 0;
-          ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->LCID = DL_SCH_LCID_CCCH;
+          ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->LCID = lcid;
           ((NR_MAC_SUBHEADER_SHORT *) &buf[mac_pdu_length])->L = mac_sdu_length;
           ra->mac_pdu_length = mac_pdu_length + mac_sdu_length + sizeof(NR_MAC_SUBHEADER_SHORT);
         } else {
           mac_subheader_len = sizeof(NR_MAC_SUBHEADER_LONG);
           ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->R = 0;
           ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->F = 1;
-          ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->LCID = DL_SCH_LCID_CCCH;
+          ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->LCID = lcid;
           ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->L = htons(mac_sdu_length);
           ra->mac_pdu_length = mac_pdu_length + mac_sdu_length + sizeof(NR_MAC_SUBHEADER_LONG);
         }
@@ -2022,7 +2025,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
 
 void nr_check_Msg4_Ack(module_id_t module_id, int CC_id, frame_t frame, sub_frame_t slot, NR_RA_t *ra) {
 
-  NR_UE_info_t * UE = find_nr_UE(&RC.nrmac[module_id]->UE_info, ra->rnti);
+  NR_UE_info_t *UE = find_nr_UE(&RC.nrmac[module_id]->UE_info, ra->rnti);
   const int current_harq_pid = ra->harq_pid;
 
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
