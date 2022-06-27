@@ -2726,12 +2726,11 @@ nr_rrc_ue_process_ueCapabilityEnquiry(
 }
 
 //-----------------------------------------------------------------------------
-void rrc_ue_generate_RRCReestablishmentRequest( const protocol_ctxt_t *const ctxt_pP, const uint8_t gNB_index )
-{
+void rrc_ue_generate_RRCReestablishmentRequest(const protocol_ctxt_t *const ctxt_pP, const uint8_t gNB_index) {
   NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size =
-    do_RRCReestablishmentRequest(
-      ctxt_pP->module_id,
-      (uint8_t *)NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload, 0x1234);
+      do_RRCReestablishmentRequest(
+          ctxt_pP->module_id,
+          (uint8_t *)NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload, 0x1234);
   LOG_I(NR_RRC,"[UE %d] : Frame %d, Logical Channel UL-CCCH (SRB0), Generating RRCReestablishmentRequest (bytes %d, gNB %d)\n",
         ctxt_pP->module_id, ctxt_pP->frame, NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size, gNB_index);
 
