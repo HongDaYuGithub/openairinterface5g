@@ -638,11 +638,9 @@ void nr_set_pdsch_semi_static(const NR_SIB1_t *sib1,
   }
   else {
     LOG_D(NR_MAC,"checking layers\n");
-    if (ps->nrOfLayers != layers || ps->numDmrsCdmGrpsNoData == 0) {
-      reset_dmrs = true;
-      ps->nrOfLayers = layers;
-      set_dl_dmrs_ports(ps);
-    }
+    reset_dmrs = true;
+    ps->nrOfLayers = layers;
+    set_dl_dmrs_ports(ps);
   }
 
   ps->N_PRB_DMRS = ps->numDmrsCdmGrpsNoData * (ps->dmrsConfigType == NFAPI_NR_DMRS_TYPE1 ? 6 : 4);
