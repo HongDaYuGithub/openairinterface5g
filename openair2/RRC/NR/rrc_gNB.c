@@ -3023,7 +3023,7 @@ rrc_gNB_decode_dcch(
                           "[MSG] NR RRC Reestablishment Complete\n");
               LOG_I(NR_RRC,
                     PROTOCOL_RRC_CTXT_UE_FMT" RLC RB %02d --- RLC_DATA_IND %d bytes "
-                    "(rrcConnectionReestablishmentComplete) ---> RRC_gNB\n",
+                    "(NR_RRCReestablishmentComplete) ---> RRC_gNB\n",
                     PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
                     DCCH,
                     sdu_sizeP);
