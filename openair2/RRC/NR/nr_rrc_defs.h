@@ -309,6 +309,9 @@ typedef struct gNB_RRC_UE_s {
   NR_RRCReconfiguration_t            *reconfig;
   NR_RadioBearerConfig_t             *rb_config;
 
+  /* Pointer to save spCellConfig during RRC Reconfiguration procedures */
+  NR_SpCellConfig_t                  *spCellConfigReestablishment;
+
   ImsiMobileIdentity_t               imsi;
 
   /* KgNB as derived from KASME received from EPC */

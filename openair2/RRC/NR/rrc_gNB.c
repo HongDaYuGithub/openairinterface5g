@@ -1649,6 +1649,11 @@ rrc_gNB_generate_RRCReestablishment(
   gNB_RRC_INST               *rrc = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
 
+  // Need to drop spCellConfig when there is a RRCReestablishment
+  // Save spCellConfig in spCellConfigReestablishment to recover after Reestablishment is completed
+  ue_context_pP->ue_context.spCellConfigReestablishment = ue_context_pP->ue_context.masterCellGroup->spCellConfig;
+  ue_context_pP->ue_context.masterCellGroup->spCellConfig = NULL;
+
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
@@ -1989,6 +1994,11 @@ rrc_gNB_process_RRCReestablishmentComplete(
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
 
+  // Revert spCellConfig stored in spCellConfigReestablishment before had been dropped during RRC Reestablishment
+  ue_context_pP->ue_context.masterCellGroup->spCellConfig = ue_context_pP->ue_context.spCellConfigReestablishment;
+  ue_context_pP->ue_context.spCellConfigReestablishment = NULL;
+  cellGroupConfig->spCellConfig = ue_context_pP->ue_context.masterCellGroup->spCellConfig;
+
   fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb, (drb_id_to_setup_start < 2) ? 1 : 0, drb_id_to_setup_start, nb_drb_to_setup, drb_priority);
 
   for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
@@ -2055,7 +2065,7 @@ rrc_gNB_process_RRCReestablishmentComplete(
                            NULL,
                            0,
                            ue_context_pP->ue_context.rnti,
-                           ue_context_pP->ue_context.masterCellGroup);
+                           cellGroupConfig);
 
     nr_rrc_data_req(
       ctxt_pP,
