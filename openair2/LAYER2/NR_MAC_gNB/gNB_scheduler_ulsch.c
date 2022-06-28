@@ -1468,7 +1468,7 @@ bool nr_fr1_ulsch_preprocessor(module_id_t module_id, frame_t frame, sub_frame_t
         frame,
         slot,
         nr_mac->UE_info.list,
-        2,
+        4,
         len,
         rballoc_mask);
   return true;
