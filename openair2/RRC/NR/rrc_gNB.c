@@ -2043,6 +2043,20 @@ rrc_gNB_process_RRCReestablishmentComplete(
   GNB_RRC_DCCH_DATA_IND (message_p).size	= size;
   itti_send_msg_to_task (TASK_RRC_UE_SIM, ctxt_pP->instance, message_p);
 #else
+
+    gNB_RrcConfigurationReq *configuration = &RC.nrrrc[ctxt_pP->module_id]->configuration;
+    rrc_mac_config_req_gNB(ctxt_pP->module_id,
+                           configuration->pdsch_AntennaPorts,
+                           configuration->pusch_AntennaPorts,
+                           configuration->sib1_tda,
+                           configuration->minRXTXTIME,
+                           NULL,
+                           NULL,
+                           NULL,
+                           0,
+                           ue_context_pP->ue_context.rnti,
+                           ue_context_pP->ue_context.masterCellGroup);
+
     nr_rrc_data_req(
       ctxt_pP,
       DCCH,
