@@ -48,10 +48,10 @@ void displayList(notifiedFIFO_t *nf) {
 static inline  notifiedFIFO_elt_t *pullNotifiedFifoRemember( notifiedFIFO_t *nf, struct one_thread *thr) {
   mutexlock(nf->lockF);
 
-  while(!nf->outF && !thr->abortFlag)
+  while(!nf->outF && !thr->terminate)
     condwait(nf->notifF, nf->lockF);
 
-  if (thr->abortFlag) {
+  if (thr->terminate) {
     mutexunlock(nf->lockF);
     return NULL;
   }
@@ -64,7 +64,7 @@ static inline  notifiedFIFO_elt_t *pullNotifiedFifoRemember( notifiedFIFO_t *nf,
 
   // For abort feature
   thr->runningOnKey=ret->key;
-  thr->abortFlag=false;
+  thr->dropJob = false;
   mutexunlock(nf->lockF);
   return ret;
 }
@@ -77,7 +77,7 @@ void *one_thread(void *arg) {
   do {
     notifiedFIFO_elt_t *elt=pullNotifiedFifoRemember(&tp->incomingFifo, myThread);
     if (elt == NULL) {
-      AssertFatal(myThread->abortFlag, "pullNotifiedFifoRemember() returned NULL although thread not aborted\n");
+      AssertFatal(myThread->terminate, "pullNotifiedFifoRemember() returned NULL although thread not aborted\n");
       break;
     }
 
@@ -91,16 +91,14 @@ void *one_thread(void *arg) {
       // Check if the job is still alive, else it has been aborted
       mutexlock(tp->incomingFifo.lockF);
 
-      if (myThread->abortFlag) {
+      if (myThread->dropJob)
         delNotifiedFIFO_elt(elt);
-        break;
-      } else {
+      else
         pushNotifiedFIFO(elt->reponseFifo, elt);
-      }
       myThread->runningOnKey=-1;
       mutexunlock(tp->incomingFifo.lockF);
     }
-  } while (!myThread->abortFlag);
+  } while (!myThread->terminate);
   return NULL;
 }
 
@@ -149,7 +147,8 @@ void initNamedTpool(char *params,tpool_t *pool, bool performanceMeas, char *name
         pool->allthreads->coreID=atoi(curptr);
         pool->allthreads->id=pool->nbThreads;
         pool->allthreads->pool=pool;
-        pool->allthreads->abortFlag = false;
+        pool->allthreads->dropJob = false;
+        pool->allthreads->terminate = false;
         //Configure the thread scheduler policy for Linux
         // set the thread name for debugging
         sprintf(pool->allthreads->name,"%s%d_%d",tname,pool->nbThreads,pool->allthreads->coreID);
