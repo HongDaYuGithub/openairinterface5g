@@ -1563,7 +1563,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
       ra->rnti = ra->crnti;
     }
 
-    NR_UE_info_t * UE = find_nr_UE(&nr_mac->UE_info, ra->rnti);
+    NR_UE_info_t *UE = find_nr_UE(&nr_mac->UE_info, ra->rnti);
     if (!UE) {
         LOG_E(NR_MAC,"want to generate Msg4, but rnti %04x not in the table\n", ra->rnti);
         return;
@@ -1651,12 +1651,12 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
         // UE Contention Resolution Identity MAC CE
         uint16_t mac_pdu_length = nr_write_ce_dlsch_pdu(module_idP, nr_mac->sched_ctrlCommon, buf, 255, ra->cont_res_id);
         LOG_D(NR_MAC,"Encoded contention resolution mac_pdu_length %d\n",mac_pdu_length);
+        uint8_t buffer[CCCH_SDU_SIZE];
+        uint8_t lcid = DL_SCH_LCID_CCCH;
+        uint8_t mac_subheader_len = sizeof(NR_MAC_SUBHEADER_SHORT);
 
         // Checking Msg4 data (RRCSetup/RRCResume/RRCReestablishment)
-        uint8_t buffer[CCCH_SDU_SIZE];
-        uint8_t mac_subheader_len = sizeof(NR_MAC_SUBHEADER_SHORT);
         uint16_t mac_sdu_length = mac_rrc_nr_data_req(module_idP, CC_id, frameP, CCCH, ra->rnti, 1, buffer);
-        uint8_t lcid = DL_SCH_LCID_CCCH;
         if (mac_sdu_length == 0) {
           LOG_I(NR_MAC,"No Msg4, check DCCH message for RRCReestablishment 0x%x\n",ra->rnti);
           sched_ctrl->rlc_status[DL_SCH_LCID_DCCH] = mac_rlc_status_ind(module_idP,
@@ -1671,19 +1671,19 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
                                                                         0);
           if (sched_ctrl->rlc_status[DL_SCH_LCID_DCCH].bytes_in_buffer > 0) {
             mac_sdu_length = mac_rlc_data_req(module_idP,
-                                        ra->rnti,
-                                        module_idP,
-                                        frameP,
-                                        ENB_FLAG_YES,
-                                        MBMS_FLAG_NO,
-                                        DL_SCH_LCID_DCCH,
-                                        sched_ctrl->rlc_status[DL_SCH_LCID_DCCH].bytes_in_buffer,
-                                        (char *)&buf[mac_pdu_length + sizeof(NR_MAC_SUBHEADER_SHORT)],
-                                        0,
-                                        0);
+                                              ra->rnti,
+                                              module_idP,
+                                              frameP,
+                                              ENB_FLAG_YES,
+                                              MBMS_FLAG_NO,
+                                              DL_SCH_LCID_DCCH,
+                                              sched_ctrl->rlc_status[DL_SCH_LCID_DCCH].bytes_in_buffer,
+                                              (char*)buffer,
+                                              0,
+                                              0);
             lcid = DL_SCH_LCID_DCCH;
           } else {
-            LOG_W(NR_MAC, "No Msg4, release ra proc. 0x%04x\n", ra->rnti);
+            LOG_W(NR_MAC, "No Msg4, release ra proc. %04x\n", ra->rnti);
             mac_remove_nr_ue(nr_mac, ra->rnti);
             nr_clear_ra_proc(module_idP, CC_id, frameP, ra);
             return;
@@ -1704,8 +1704,8 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
           ((NR_MAC_SUBHEADER_LONG *) &buf[mac_pdu_length])->L = htons(mac_sdu_length);
           ra->mac_pdu_length = mac_pdu_length + mac_sdu_length + sizeof(NR_MAC_SUBHEADER_LONG);
         }
-        memcpy(&buf[mac_pdu_length + mac_subheader_len], buffer, mac_sdu_length);
         LOG_I(NR_MAC,"Encoded RRCSetup Piggyback (%d + %d bytes), mac_pdu_length %d\n", mac_sdu_length, mac_subheader_len, ra->mac_pdu_length);
+        memcpy(&buf[mac_pdu_length + mac_subheader_len], buffer, mac_sdu_length);
       }
     }
 
@@ -2004,7 +2004,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
       // 3GPP TS 38.331 Section 12 Table 12.1-1: UE performance requirements for RRC procedures for UEs
       const NR_COMMON_channels_t *common_channels = &RC.nrmac[module_idP]->common_channels[0];
       const NR_SIB1_t *sib1 = common_channels->sib1 ? common_channels->sib1->message.choice.c1->choice.systemInformationBlockType1 : NULL;
-      const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
+      const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup && UE->CellGroup->spCellConfig ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
       NR_BWP_t *genericParameters = get_dl_bwp_genericParameters(sched_ctrl->active_bwp,
                                                                  common_channels->ServingCellConfigCommon,
                                                                  sib1);
@@ -2026,7 +2026,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
 
 void nr_check_Msg4_Ack(module_id_t module_id, int CC_id, frame_t frame, sub_frame_t slot, NR_RA_t *ra) {
 
-  NR_UE_info_t * UE = find_nr_UE(&RC.nrmac[module_id]->UE_info, ra->rnti);
+  NR_UE_info_t *UE = find_nr_UE(&RC.nrmac[module_id]->UE_info, ra->rnti);
   const int current_harq_pid = ra->harq_pid;
 
   NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
@@ -2046,7 +2046,7 @@ void nr_check_Msg4_Ack(module_id_t module_id, int CC_id, frame_t frame, sub_fram
         // 3GPP TS 38.331 Section 12 Table 12.1-1: UE performance requirements for RRC procedures for UEs
         const NR_COMMON_channels_t *common_channels = &RC.nrmac[module_id]->common_channels[0];
         const NR_SIB1_t *sib1 = common_channels->sib1 ? common_channels->sib1->message.choice.c1->choice.systemInformationBlockType1 : NULL;
-        const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
+        const NR_ServingCellConfig_t *servingCellConfig = UE->CellGroup && UE->CellGroup->spCellConfig ? UE->CellGroup->spCellConfig->spCellConfigDedicated : NULL;
         NR_BWP_t *genericParameters = get_dl_bwp_genericParameters(sched_ctrl->active_bwp,
                                                                    common_channels->ServingCellConfigCommon,
                                                                    sib1);

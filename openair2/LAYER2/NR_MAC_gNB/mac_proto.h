@@ -404,6 +404,8 @@ int find_nr_RA_id(module_id_t mod_idP, int CC_idP, rnti_t rntiP);
 
 NR_UE_info_t*add_new_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rntiP, NR_CellGroupConfig_t *CellGroup);
 
+void nr_rrc_mac_remove_ue(module_id_t mod_id, rnti_t rnti);
+
 void mac_remove_nr_ue(gNB_MAC_INST *nr_mac, rnti_t rnti);
 
 void nr_mac_remove_ra_rnti(module_id_t mod_id, rnti_t rnti);

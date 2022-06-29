@@ -304,31 +304,33 @@ void apply_macrlc_config(gNB_RRC_INST *rrc,
                              get_softmodem_params()->sa ? cgc->rlc_BearerToAddModList : NULL);
 
 }
+
 void apply_macrlc_config_reest(gNB_RRC_INST *rrc,
-                         rrc_gNB_ue_context_t         *const ue_context_pP,
-                         const protocol_ctxt_t        *const ctxt_pP,
-                         int rnti) {
+                               rrc_gNB_ue_context_t         *const ue_context_pP,
+                               const protocol_ctxt_t        *const ctxt_pP,
+                               int rnti) {
 
-      rrc_mac_config_req_gNB(rrc->module_id,
-                             rrc->configuration.pdsch_AntennaPorts,
-                             rrc->configuration.pusch_AntennaPorts,
-                             rrc->configuration.sib1_tda,
-                             rrc->configuration.minRXTXTIME,
-                             NULL,
-                             NULL,
-                             NULL,
-                             0,
-                             rnti,
-                             get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup : NULL);
+  rrc_mac_config_req_gNB(rrc->module_id,
+                         rrc->configuration.pdsch_AntennaPorts,
+                         rrc->configuration.pusch_AntennaPorts,
+                         rrc->configuration.sib1_tda,
+                         rrc->configuration.minRXTXTIME,
+                         NULL,
+                         NULL,
+                         NULL,
+                         0,
+                         rnti,
+                         get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup : NULL);
 
-      nr_rrc_rlc_config_asn1_req(ctxt_pP,
-                                 ue_context_pP->ue_context.SRB_configList,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+  nr_rrc_rlc_config_asn1_req(ctxt_pP,
+                             ue_context_pP->ue_context.SRB_configList,
+                             NULL,
+                             NULL,
+                             NULL,
+                             get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
 
 }
+
 void apply_pdcp_config(rrc_gNB_ue_context_t         *const ue_context_pP,
                        const protocol_ctxt_t        *const ctxt_pP ) {
 
@@ -483,7 +485,6 @@ rrc_gNB_generate_RRCSetup_for_RRCReestablishmentRequest(
   NR_ServingCellConfigCommon_t *scc=rrc_instance_p->carrier.servingcellconfigcommon;
   NR_ServingCellConfig_t       *servingcellconfigdedicated = rrc_instance_p->configuration.scd;
 
-  // TODO: need to be fixed and to select the right
   ue_context_pP = rrc_gNB_get_next_free_ue_context(ctxt_pP, rrc_instance_p, 0);
   ue_context_pP = rrc_gNB_get_ue_context(rrc_instance_p, ctxt_pP->rnti);
 
@@ -506,6 +507,18 @@ rrc_gNB_generate_RRCSetup_for_RRCReestablishmentRequest(
   LOG_D(NR_RRC,
           PROTOCOL_NR_RRC_CTXT_UE_FMT" RRC_gNB --- MAC_CONFIG_REQ  (SRB1) ---> MAC_gNB\n",
           PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
+
+  rrc_mac_config_req_gNB(rrc_instance_p->module_id,
+                         rrc_instance_p->configuration.pdsch_AntennaPorts,
+                         rrc_instance_p->configuration.pusch_AntennaPorts,
+                         rrc_instance_p->configuration.sib1_tda,
+                         rrc_instance_p->configuration.minRXTXTIME,
+                         rrc_instance_p->carrier.servingcellconfigcommon,
+                         &rrc_instance_p->carrier.mib,
+                         rrc_instance_p->carrier.siblock1,
+                         0,
+                         ue_context_pP->ue_context.rnti,
+                         NULL);
 
   LOG_I(NR_RRC,
         PROTOCOL_NR_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel DL-CCCH, Generating RRCSetup (bytes %d)\n",
@@ -639,7 +652,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t                       buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                       buffer[RRC_BUF_SIZE];
   uint16_t                      size;
   /*NR_SRB_ToAddModList_t        **SRB_configList2 = NULL;
   NR_SRB_ToAddModList_t        *SRB_configList  = ue_context_pP->ue_context.SRB_configList;
@@ -886,7 +899,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                        buffer[RRC_BUF_SIZE];
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int                            pdu_sessions_done = 0;
@@ -1049,7 +1062,6 @@ rrc_gNB_generate_dedicatedRRCReconfiguration(
     dedicatedNAS_MessageList = NULL;
   }
 
-  memset(buffer, 0, sizeof(buffer));
   if(cell_groupConfig_from_DU == NULL){
     cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
     // FIXME: fill_mastercellGroupConfig() won't fill the right priorities or
@@ -1153,7 +1165,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
   struct NR_RRCReconfiguration_v1530_IEs__dedicatedNAS_MessageList
                                 *dedicatedNAS_MessageList = NULL;
   NR_DedicatedNAS_Message_t     *dedicatedNAS_Message = NULL;
-  uint8_t                        buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                        buffer[RRC_BUF_SIZE];
   uint16_t                       size;
   int                            qos_flow_index = 0;
   int i, j;
@@ -1335,7 +1347,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
     uint8_t                 *nas_buffer)
 //-----------------------------------------------------------------------------
 {
-  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                             buffer[RRC_BUF_SIZE];
   int                                 i;
   uint16_t                            size  = 0;
   NR_DRB_ToReleaseList_t             **DRB_Release_configList2 = NULL;
@@ -1634,24 +1646,29 @@ rrc_gNB_generate_RRCReestablishment(
   NR_SRB_ToAddModList_t      **SRB_configList;
   gNB_RRC_UE_t               *ue_context = NULL;
   module_id_t                module_id = ctxt_pP->module_id;
-  uint8_t                    buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                    buffer[RRC_BUF_SIZE];
   uint16_t                   size  = 0;
-  gNB_RRC_INST               *rrc_instance_p = RC.nrrrc[ctxt_pP->module_id];
+  gNB_RRC_INST               *rrc = RC.nrrrc[ctxt_pP->module_id];
   int enable_ciphering=0;
+
+  // Need to drop spCellConfig when there is a RRCReestablishment
+  // Save spCellConfig in spCellConfigReestablishment to recover after Reestablishment is completed
+  ue_context_pP->ue_context.spCellConfigReestablishment = ue_context_pP->ue_context.masterCellGroup->spCellConfig;
+  ue_context_pP->ue_context.masterCellGroup->spCellConfig = NULL;
 
   SRB_configList = &(ue_context_pP->ue_context.SRB_configList);
   //carrier = &(RC.nrrrc[ctxt_pP->module_id]->carrier);
   ue_context = &(ue_context_pP->ue_context);
   size = do_RRCReestablishment(ctxt_pP,
-      ue_context_pP,
-      CC_id,
-      buffer,
-      RRC_BUF_SIZE,
-      //(uint8_t) carrier->p_gNB, // at this point we do not have the UE capability information, so it can only be TM1 or TM2
-      rrc_gNB_get_next_transaction_identifier(module_id),
-      SRB_configList,
-      masterCellGroup_from_DU,
-      scc,&rrc_instance_p->carrier);
+                               ue_context_pP,
+                               CC_id,
+                               buffer,
+                               RRC_BUF_SIZE,
+                               rrc_gNB_get_next_transaction_identifier(module_id),
+                               SRB_configList,
+                               masterCellGroup_from_DU,
+                               scc,
+                               &rrc->carrier);
 
   /* Configure SRB1 for UE */
   if (*SRB_configList != NULL) {
@@ -1736,8 +1753,8 @@ rrc_gNB_generate_RRCReestablishment(
         kRRCenc,
         kRRCint,
         kUPenc);
-    if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
-      apply_macrlc_config_reest(RC.nrrrc[ctxt_pP->module_id],ue_context_pP,ctxt_pP,ctxt_pP->rnti);
+    if (!NODE_IS_CU(rrc->node_type)) {
+      apply_macrlc_config_reest(rrc,ue_context_pP,ctxt_pP,ctxt_pP->rnti);
     }
     nr_rrc_data_req(ctxt_pP,
                 DCCH,
@@ -1746,6 +1763,32 @@ rrc_gNB_generate_RRCReestablishment(
                 size,
                 buffer,
                 PDCP_TRANSMISSION_MODE_CONTROL);
+
+  if (NODE_IS_DU(rrc->node_type) || NODE_IS_MONOLITHIC(rrc->node_type)) {
+    gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
+    rrc_mac_config_req_gNB(rrc->module_id,
+                           rrc->configuration.pdsch_AntennaPorts,
+                           rrc->configuration.pusch_AntennaPorts,
+                           rrc->configuration.sib1_tda,
+                           rrc->configuration.minRXTXTIME,
+                           NULL,
+                           NULL,
+                           NULL,
+                           0,
+                           ue_p->rnti,
+                           ue_p->masterCellGroup);
+
+    uint32_t delay_ms = ue_context_pP->ue_context.masterCellGroup &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig->spCellConfigDedicated &&
+                        ue_context_pP->ue_context.masterCellGroup->spCellConfig->spCellConfigDedicated->downlinkBWP_ToAddModList ?
+                        NR_RRC_RECONFIGURATION_DELAY_MS + NR_RRC_BWP_SWITCHING_DELAY_MS : NR_RRC_RECONFIGURATION_DELAY_MS;
+
+    nr_mac_enable_ue_rrc_processing_timer(ctxt_pP->module_id,
+                                          ue_context_pP->ue_context.rnti,
+                                          *rrc->carrier.servingcellconfigcommon->ssbSubcarrierSpacing,
+                                          delay_ms);
+  }
 #endif
 
 }
@@ -1772,7 +1815,7 @@ rrc_gNB_process_RRCReestablishmentComplete(
   NR_DRB_ToAddMod_t                     *DRB_config      = NULL;
   //NR_SDAP_Config_t                      *sdap_config     = NULL;
   int i = 0;
-  uint8_t                             buffer[RRC_BUF_SIZE] = {0};
+  uint8_t                             buffer[RRC_BUF_SIZE];
   uint16_t                            size;
 
   uint8_t next_xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
@@ -1953,6 +1996,11 @@ rrc_gNB_process_RRCReestablishmentComplete(
   gNB_RRC_INST *rrc = RC.nrrrc[ctxt_pP->module_id];
   NR_CellGroupConfig_t *cellGroupConfig = calloc(1, sizeof(NR_CellGroupConfig_t));
 
+  // Revert spCellConfig stored in spCellConfigReestablishment before had been dropped during RRC Reestablishment
+  ue_context_pP->ue_context.masterCellGroup->spCellConfig = ue_context_pP->ue_context.spCellConfigReestablishment;
+  ue_context_pP->ue_context.spCellConfigReestablishment = NULL;
+  cellGroupConfig->spCellConfig = ue_context_pP->ue_context.masterCellGroup->spCellConfig;
+
   fill_mastercellGroupConfig(cellGroupConfig, ue_context_pP->ue_context.masterCellGroup, rrc->um_on_default_drb, (drb_id_to_setup_start < 2) ? 1 : 0, drb_id_to_setup_start, nb_drb_to_setup, drb_priority);
 
   for(i = 0; i < cellGroupConfig->rlc_BearerToAddModList->list.count; i++) {
@@ -1991,10 +2039,10 @@ rrc_gNB_process_RRCReestablishmentComplete(
     return;
   } else {
     LOG_I(NR_RRC,
-          "[gNB %d] Frame %d, Logical Channel DL-DCCH, Generate NR_RRCReconfiguration (bytes %d, UE id %x)\n",
+          "[gNB %d] Frame %d, Logical Channel DL-DCCH, Generate NR_RRCReconfiguration (bytes %d, UE %04x)\n",
           ctxt_pP->module_id, ctxt_pP->frame, size, ue_context_pP->ue_context.rnti);
     LOG_D(NR_RRC,
-          "[FRAME %05d][RRC_gNB][MOD %u][][--- PDCP_DATA_REQ/%d Bytes (RRCReconfiguration to UE %x MUI %d) --->][PDCP][MOD %u][RB %u]\n",
+          "[FRAME %05d][RRC_gNB][MOD %u][][--- PDCP_DATA_REQ/%d Bytes (NR_RRCReconfiguration to UE %04x MUI %d) --->][PDCP][MOD %u][RB %u]\n",
           ctxt_pP->frame, ctxt_pP->module_id, size, ue_context_pP->ue_context.rnti, rrc_gNB_mui, ctxt_pP->module_id, DCCH);
 #ifdef ITTI_SIM
   MessageDef *message_p;
@@ -2007,6 +2055,20 @@ rrc_gNB_process_RRCReestablishmentComplete(
   GNB_RRC_DCCH_DATA_IND (message_p).size	= size;
   itti_send_msg_to_task (TASK_RRC_UE_SIM, ctxt_pP->instance, message_p);
 #else
+
+    gNB_RrcConfigurationReq *configuration = &RC.nrrrc[ctxt_pP->module_id]->configuration;
+    rrc_mac_config_req_gNB(ctxt_pP->module_id,
+                           configuration->pdsch_AntennaPorts,
+                           configuration->pusch_AntennaPorts,
+                           configuration->sib1_tda,
+                           configuration->minRXTXTIME,
+                           NULL,
+                           NULL,
+                           NULL,
+                           0,
+                           ue_context_pP->ue_context.rnti,
+                           cellGroupConfig);
+
     nr_rrc_data_req(
       ctxt_pP,
       DCCH,
@@ -2039,7 +2101,6 @@ int nr_rrc_reconfiguration_req(rrc_gNB_ue_context_t         *const ue_context_pP
                                const int                    ul_bwp_id) {
 
   uint8_t buffer[RRC_BUF_SIZE];
-  memset(buffer, 0, sizeof(buffer));
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id);
 
   NR_CellGroupConfig_t *masterCellGroup = ue_context_pP->ue_context.masterCellGroup;
@@ -2053,7 +2114,7 @@ int nr_rrc_reconfiguration_req(rrc_gNB_ue_context_t         *const ue_context_pP
 
   uint16_t  size = do_RRCReconfiguration(ctxt_pP,
                                          buffer,
-                                         sizeof(buffer),
+                                         RRC_BUF_SIZE,
                                          xid,
                                          NULL,
                                          NULL,
@@ -2971,10 +3032,10 @@ rrc_gNB_decode_dcch(
 
             case NR_UL_DCCH_MessageType__c1_PR_rrcReestablishmentComplete:
               LOG_DUMPMSG(NR_RRC,DEBUG_RRC,(char *)Rx_sdu,sdu_sizeP,
-                          "[MSG] NR RRC Reestablishment Complete\n");
+                          "[MSG] NR_RRCReestablishmentComplete\n");
               LOG_I(NR_RRC,
                     PROTOCOL_RRC_CTXT_UE_FMT" RLC RB %02d --- RLC_DATA_IND %d bytes "
-                    "(rrcConnectionReestablishmentComplete) ---> RRC_gNB\n",
+                    "(NR_RRCReestablishmentComplete) ---> RRC_gNB\n",
                     PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
                     DCCH,
                     sdu_sizeP);
@@ -3201,23 +3262,23 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
       ue_p->Srb0.Tx_buffer.payload_size = req->buf->size;
       break;
     } // case
-      
+
     case NR_DL_CCCH_MessageType__c1_PR_spare2:
       LOG_I(F1AP,
 	    "Logical Channel DL-CCCH (SRB0), Received spare2\n");
       break;
-      
+
     case NR_DL_CCCH_MessageType__c1_PR_spare1:
       LOG_I(F1AP,
 	    "Logical Channel DL-CCCH (SRB0), Received spare1\n");
       break;
-      
+
     default:
       AssertFatal(1==0,
 		  "Unknown message\n");
       break;
     }// switch case
-    
+
     return(0);
   } else if (req->srb_id == 1) {
     NR_DL_DCCH_Message_t *dl_dcch_msg=NULL;
@@ -3227,44 +3288,44 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
 			   (void **)&dl_dcch_msg,
 			   &req->buf->data[2], // buf[0] includes the pdcp header
 			   req->buf->size-6,0,0);
-    
+
     if ((dec_rval.code != RC_OK) && (dec_rval.consumed == 0))
       LOG_E(F1AP," Failed to decode DL-DCCH (%zu bytes)\n",dec_rval.consumed);
     else
       LOG_D(F1AP, "Received message: present %d and c1 present %d\n",
 	    dl_dcch_msg->message.present, dl_dcch_msg->message.choice.c1->present);
-    
+
     if (dl_dcch_msg->message.present == NR_DL_DCCH_MessageType_PR_c1) {
       switch (dl_dcch_msg->message.choice.c1->present) {
       case NR_DL_DCCH_MessageType__c1_PR_NOTHING:
 	LOG_I(F1AP, "Received PR_NOTHING on DL-DCCH-Message\n");
 	return 0;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration:
 	// handle RRCReconfiguration
 	LOG_I(F1AP, "Logical Channel DL-DCCH (SRB1), Received RRCReconfiguration RNTI %x\n",
 	      req->rnti);
 	NR_RRCReconfiguration_t *rrcReconfiguration = dl_dcch_msg->message.choice.c1->choice.rrcReconfiguration;
-	
+
 	if (rrcReconfiguration->criticalExtensions.present == NR_RRCReconfiguration__criticalExtensions_PR_rrcReconfiguration) {
 	  NR_RRCReconfiguration_IEs_t *rrcReconfiguration_ies =
 	    rrcReconfiguration->criticalExtensions.choice.rrcReconfiguration;
-	  
+
 	  if (rrcReconfiguration_ies->measConfig != NULL) {
 	    LOG_I(F1AP, "Measurement Configuration is present\n");
 	  }
-	  
+
 	  if (rrcReconfiguration_ies->radioBearerConfig) {
 	    LOG_I(F1AP, "Radio Resource Configuration is present\n");
 	    long drb_id;
 	    int i;
 	    NR_DRB_ToAddModList_t  *DRB_configList  = rrcReconfiguration_ies->radioBearerConfig->drb_ToAddModList;
 	    NR_SRB_ToAddModList_t  *SRB_configList  = rrcReconfiguration_ies->radioBearerConfig->srb_ToAddModList;
-	    
+
 	    // NR_DRB_ToReleaseList_t *DRB_ReleaseList = rrcReconfiguration_ies->radioBearerConfig->drb_ToReleaseList;
-	    
+
 	    // rrc_rlc_config_asn1_req
-	    
+
 	    if (SRB_configList != NULL) {
 	      for (i = 0; (i < SRB_configList->list.count) && (i < 3); i++) {
 		if (SRB_configList->list.array[i]->srb_Identity == 1 ) {
@@ -3279,7 +3340,7 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
 		}
 	      }
 	    }
-	    
+
 	    if (DRB_configList != NULL) {
 	      for (i = 0; i < DRB_configList->list.count; i++) {  // num max DRB (11-3-8)
 		if (DRB_configList->list.array[i]) {
@@ -3289,9 +3350,9 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
 			ctxt.module_id,
 			ctxt.rnti,
 			(int)DRB_configList->list.array[i]->drb_Identity);
-		  
+
 		  // (int)*DRB_configList->list.array[i]->logicalChannelIdentity);
-		  
+
 		  if (ue_context_p->ue_context.DRB_active[drb_id] == 0) {
 		    ue_context_p->ue_context.DRB_active[drb_id] = 1;
 		    // logicalChannelIdentity
@@ -3304,37 +3365,37 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
 	    }
 	  }
 	}
-	
+
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_rrcResume:
 	LOG_I(F1AP,"Received rrcResume\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_rrcRelease:
 	LOG_I(F1AP,"Received rrcRelease\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_rrcReestablishment:
 	LOG_I(F1AP,"Received rrcReestablishment\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_securityModeCommand:
 	LOG_I(F1AP,"Received securityModeCommand\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_dlInformationTransfer:
 	LOG_I(F1AP, "Received dlInformationTransfer\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_ueCapabilityEnquiry:
 	LOG_I(F1AP, "Received ueCapabilityEnquiry\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_counterCheck:
 	LOG_I(F1AP, "Received counterCheck\n");
 	break;
-	
+
       case NR_DL_DCCH_MessageType__c1_PR_mobilityFromNRCommand:
       case NR_DL_DCCH_MessageType__c1_PR_dlDedicatedMessageSegment_r16:
       case NR_DL_DCCH_MessageType__c1_PR_ueInformationRequest_r16:
@@ -3350,19 +3411,19 @@ static int  rrc_process_DU_DL(MessageDef *msg_p, const char *msg_name, instance_
     // TODO
     //abort();
   }
-  
+
   LOG_I(F1AP, "Received DL RRC Transfer on srb_id %ld\n", req->srb_id);
   //   rlc_op_status_t    rlc_status;
   //   boolean_t          ret             = TRUE;
-  
+
   //LOG_I(F1AP, "PRRCContainer size %lu:", ie->value.choice.RRCContainer.size);
   //for (int i = 0; i < ie->value.choice.RRCContainer.size; i++)
   //  printf("%02x ", ie->value.choice.RRCContainer.buf[i]);
-  
+
   //printf (", PDCP PDU size %d:", rrc_dl_sdu_len);
   //for (int i=0;i<rrc_dl_sdu_len;i++) printf("%2x ",pdcp_pdu_p->data[i]);
   //printf("\n");
-  
+
   du_rlc_data_req(&ctxt, 1, 0, req->srb_id , 1, 0, req->buf->size, req->buf);
   //   rlc_status = rlc_data_req(&ctxt
   //                             , 1
@@ -3581,7 +3642,7 @@ static void rrc_DU_process_ue_context_setup_request(MessageDef *msg_p, const cha
   /* Fill the UE context setup response ITTI message to send to F1AP */
   resp->gNB_CU_ue_id = req->gNB_CU_ue_id;
   resp->rnti = ctxt.rnti;
-  if(DRB_configList){ 
+  if(DRB_configList){
     if(DRB_configList->list.count > 0){
       resp->drbs_to_be_setup = calloc(1,DRB_configList->list.count*sizeof(f1ap_drb_to_be_setup_t));
       resp->drbs_to_be_setup_length = DRB_configList->list.count;
@@ -4209,7 +4270,7 @@ void *rrc_gnb_task(void *args_p) {
 	  for (i=0; i<RC.nb_nr_inst; i++) {
 	    // first get RRC instance (note, no the ITTI instance)
 	    gNB_RRC_INST *rrc = RC.nrrrc[i];
-	    
+
 	    if (rrc->nr_cellid == NR_RRC_MAC_CCCH_DATA_IND(msg_p).nr_cellid)
 	      break;
 	  }
@@ -4226,7 +4287,7 @@ void *rrc_gnb_task(void *args_p) {
 		NR_RRC_MAC_CCCH_DATA_IND(msg_p).CC_id,
 		&ctxt,
 		NR_RRC_MAC_CCCH_DATA_IND(msg_p).sdu_size);
-	  
+
 	  if (NR_RRC_MAC_CCCH_DATA_IND(msg_p).sdu_size >= CCCH_SDU_SIZE) {
 	    LOG_I(NR_RRC, "CCCH message has size %d > %d\n",
 		  NR_RRC_MAC_CCCH_DATA_IND(msg_p).sdu_size,CCCH_SDU_SIZE);
@@ -4238,7 +4299,7 @@ void *rrc_gnb_task(void *args_p) {
 				 NR_RRC_MAC_CCCH_DATA_IND(msg_p).sdu_size,
 				 NR_RRC_MAC_CCCH_DATA_IND(msg_p).du_to_cu_rrc_container,
 				 NR_RRC_MAC_CCCH_DATA_IND(msg_p).CC_id);
-	  
+
 	  if (NR_RRC_MAC_CCCH_DATA_IND(msg_p).du_to_cu_rrc_container) {
 	    free(NR_RRC_MAC_CCCH_DATA_IND(msg_p).du_to_cu_rrc_container->buf);
 	    free(NR_RRC_MAC_CCCH_DATA_IND(msg_p).du_to_cu_rrc_container);
@@ -4300,11 +4361,11 @@ void *rrc_gnb_task(void *args_p) {
         LOG_I(NR_RRC,"[gNB %ld] Received %s : %p\n", instance, msg_name_p, &F1AP_SETUP_REQ(msg_p));
         rrc_gNB_process_f1_setup_req(&F1AP_SETUP_REQ(msg_p));
         break;
-	
+
       case NR_DU_RRC_DL_INDICATION:
         rrc_process_DU_DL(msg_p, msg_name_p, instance);
         break;
-      
+
       case F1AP_UE_CONTEXT_SETUP_REQ:
         rrc_DU_process_ue_context_setup_request(msg_p, msg_name_p, instance);
         break;
@@ -4358,7 +4419,7 @@ void *rrc_gnb_task(void *args_p) {
         break;
 
       case NGAP_PAGING_IND:
-          rrc_gNB_process_PAGING_IND(msg_p, msg_name_p, instance);
+        rrc_gNB_process_PAGING_IND(msg_p, msg_name_p, instance);
         break;
 
       default:
@@ -4536,11 +4597,10 @@ rrc_gNB_generate_RRCRelease(
 )
 //-----------------------------------------------------------------------------
 {
-  uint8_t buffer[RRC_BUF_SIZE] = {0};
+  uint8_t buffer[RRC_BUF_SIZE];
   uint16_t size = 0;
 
-  size = do_NR_RRCRelease(buffer, sizeof(buffer),
-                          rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id));
+  size = do_NR_RRCRelease(buffer, RRC_BUF_SIZE, rrc_gNB_get_next_transaction_identifier(ctxt_pP->module_id));
   ue_context_pP->ue_context.ue_reestablishment_timer = 0;
   ue_context_pP->ue_context.ue_release_timer = 0;
   ue_context_pP->ue_context.ul_failure_timer = 0;
@@ -4591,128 +4651,129 @@ rrc_gNB_generate_RRCRelease(
   }
 #endif
 }
+
 int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t instance, uint8_t CC_id){
-    const unsigned int Ttab[4] = {32,64,128,256};
-    uint8_t Tc;
-    uint8_t Tue;
-    uint32_t pfoffset;
-    uint32_t N;  /* N: min(T,nB). total count of PF in one DRX cycle */
-    uint32_t Ns = 0;  /* Ns: max(1,nB/T) */
-    uint8_t i_s;  /* i_s = floor(UE_ID/N) mod Ns */
-    uint32_t T;  /* DRX cycle */
-    uint32_t length;
-    uint8_t buffer[RRC_BUF_SIZE];
-    struct NR_SIB1 *sib1 = RC.nrrrc[instance]->carrier.siblock1->message.choice.c1->choice.systemInformationBlockType1;
+  const unsigned int Ttab[4] = {32,64,128,256};
+  uint8_t Tc;
+  uint8_t Tue;
+  uint32_t pfoffset;
+  uint32_t N;  /* N: min(T,nB). total count of PF in one DRX cycle */
+  uint32_t Ns = 0;  /* Ns: max(1,nB/T) */
+  uint8_t i_s;  /* i_s = floor(UE_ID/N) mod Ns */
+  uint32_t T;  /* DRX cycle */
+  uint32_t length;
+  uint8_t buffer[RRC_BUF_SIZE];
+  struct NR_SIB1 *sib1 = RC.nrrrc[instance]->carrier.siblock1->message.choice.c1->choice.systemInformationBlockType1;
 
-    /* get default DRX cycle from configuration */
-    Tc = sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.defaultPagingCycle;
+  /* get default DRX cycle from configuration */
+  Tc = sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.defaultPagingCycle;
 
-    Tue = paging_drx;
-    /* set T = min(Tc,Tue) */
-    T = Tc < Tue ? Ttab[Tc] : Ttab[Tue];
-    /* set N = PCCH-Config->nAndPagingFrameOffset */
-    switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present) {
-      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneT:
-          N = T;
-          pfoffset = 0;
-          break;
-      case NR_PCCH_Config__nAndPagingFrameOffset_PR_halfT:
-          N = T/2;
-          pfoffset = 1;
-          break;
-      case NR_PCCH_Config__nAndPagingFrameOffset_PR_quarterT:
-          N = T/4;
-          pfoffset = 3;
-          break;
-      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneEighthT:
-          N = T/8;
-          pfoffset = 7;
-          break;
-      case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneSixteenthT:
-          N = T/16;
-          pfoffset = 15;
-          break;
-      default:
-          LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  pfoffset error (pfoffset %d) \n",
-                instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present);
-          return (-1);
+  Tue = paging_drx;
+  /* set T = min(Tc,Tue) */
+  T = Tc < Tue ? Ttab[Tc] : Ttab[Tue];
+  /* set N = PCCH-Config->nAndPagingFrameOffset */
+  switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present) {
+    case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneT:
+      N = T;
+      pfoffset = 0;
+      break;
+    case NR_PCCH_Config__nAndPagingFrameOffset_PR_halfT:
+      N = T/2;
+      pfoffset = 1;
+      break;
+    case NR_PCCH_Config__nAndPagingFrameOffset_PR_quarterT:
+      N = T/4;
+      pfoffset = 3;
+      break;
+    case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneEighthT:
+      N = T/8;
+      pfoffset = 7;
+      break;
+    case NR_PCCH_Config__nAndPagingFrameOffset_PR_oneSixteenthT:
+      N = T/16;
+      pfoffset = 15;
+      break;
+    default:
+      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  pfoffset error (pfoffset %d) \n",
+            instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present);
+      return (-1);
 
-    }
+  }
 
-    switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns) {
-      case NR_PCCH_Config__ns_four:
-        if(*sib1->servingCellConfigCommon->downlinkConfigCommon.initialDownlinkBWP.pdcch_ConfigCommon->choice.setup->pagingSearchSpace == 0){
-          LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error only 1 or 2 is allowed when pagingSearchSpace is 0\n",
-                    instance);
-          return (-1);
-        } else {
-          Ns = 4;
-        }
-        break;
-      case NR_PCCH_Config__ns_two:
-        Ns = 2;
-        break;
-      case NR_PCCH_Config__ns_one:
-        Ns = 1;
-        break;
-      default:
-        LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error (ns %ld) \n",
-                instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns);
+  switch (sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns) {
+    case NR_PCCH_Config__ns_four:
+      if(*sib1->servingCellConfigCommon->downlinkConfigCommon.initialDownlinkBWP.pdcch_ConfigCommon->choice.setup->pagingSearchSpace == 0){
+        LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error only 1 or 2 is allowed when pagingSearchSpace is 0\n",
+              instance);
         return (-1);
-    }
-
-    /* insert data to UE_PF_PO or update data in UE_PF_PO */
-    pthread_mutex_lock(&ue_pf_po_mutex);
-    uint8_t i = 0;
-
-    for (i = 0; i < MAX_MOBILES_PER_ENB; i++) {
-      if ((UE_PF_PO[CC_id][i].enable_flag == TRUE && UE_PF_PO[CC_id][i].ue_index_value == (uint16_t)(tmsi%1024))
-            || (UE_PF_PO[CC_id][i].enable_flag != TRUE)) {
-        /* set T = min(Tc,Tue) */
-        UE_PF_PO[CC_id][i].T = T;
-        /* set UE_ID */
-        UE_PF_PO[CC_id][i].ue_index_value = (uint16_t)(tmsi%1024);
-        /* calculate PF and PO */
-        /* set PF_min and PF_offset: (SFN + PF_offset) mod T = (T div N)*(UE_ID mod N) */
-        UE_PF_PO[CC_id][i].PF_min = (T / N) * (UE_PF_PO[CC_id][i].ue_index_value % N);
-        UE_PF_PO[CC_id][i].PF_offset = pfoffset;
-        /* set i_s */
-        /* i_s = floor(UE_ID/N) mod Ns */
-        i_s = (uint8_t)((UE_PF_PO[CC_id][i].ue_index_value / N) % Ns);
-        UE_PF_PO[CC_id][i].i_s = i_s;
-
-        // TODO,set PO
-
-        if (UE_PF_PO[CC_id][i].enable_flag == TRUE) {
-          //paging exist UE log
-          LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Update exist UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
-                  T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
-        } else {
-          /* set enable_flag */
-          UE_PF_PO[CC_id][i].enable_flag = TRUE;
-          //paging new UE log
-          LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Insert a new UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
-                  T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
-        }
-
-        break;
+      } else {
+        Ns = 4;
       }
+      break;
+    case NR_PCCH_Config__ns_two:
+      Ns = 2;
+      break;
+    case NR_PCCH_Config__ns_one:
+      Ns = 1;
+      break;
+    default:
+      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error (ns %ld) \n",
+            instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns);
+      return (-1);
+  }
+
+  /* insert data to UE_PF_PO or update data in UE_PF_PO */
+  pthread_mutex_lock(&ue_pf_po_mutex);
+  uint8_t i = 0;
+
+  for (i = 0; i < MAX_MOBILES_PER_ENB; i++) {
+    if ((UE_PF_PO[CC_id][i].enable_flag == TRUE && UE_PF_PO[CC_id][i].ue_index_value == (uint16_t)(tmsi%1024))
+        || (UE_PF_PO[CC_id][i].enable_flag != TRUE)) {
+      /* set T = min(Tc,Tue) */
+      UE_PF_PO[CC_id][i].T = T;
+      /* set UE_ID */
+      UE_PF_PO[CC_id][i].ue_index_value = (uint16_t)(tmsi%1024);
+      /* calculate PF and PO */
+      /* set PF_min and PF_offset: (SFN + PF_offset) mod T = (T div N)*(UE_ID mod N) */
+      UE_PF_PO[CC_id][i].PF_min = (T / N) * (UE_PF_PO[CC_id][i].ue_index_value % N);
+      UE_PF_PO[CC_id][i].PF_offset = pfoffset;
+      /* set i_s */
+      /* i_s = floor(UE_ID/N) mod Ns */
+      i_s = (uint8_t)((UE_PF_PO[CC_id][i].ue_index_value / N) % Ns);
+      UE_PF_PO[CC_id][i].i_s = i_s;
+
+      // TODO,set PO
+
+      if (UE_PF_PO[CC_id][i].enable_flag == TRUE) {
+        //paging exist UE log
+        LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Update exist UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
+              T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
+      } else {
+        /* set enable_flag */
+        UE_PF_PO[CC_id][i].enable_flag = TRUE;
+        //paging new UE log
+        LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Insert a new UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
+              T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
+      }
+
+      break;
     }
+  }
 
-    pthread_mutex_unlock(&ue_pf_po_mutex);
+  pthread_mutex_unlock(&ue_pf_po_mutex);
 
-    /* Create message for PDCP (DLInformationTransfer_t) */
-    length = do_NR_Paging (instance,
-                           buffer,
-                           tmsi);
+  /* Create message for PDCP (DLInformationTransfer_t) */
+  length = do_NR_Paging (instance,
+                         buffer,
+                         tmsi);
 
-    if(length == -1) {
-      LOG_I(NR_RRC, "do_Paging error");
-      return -1;
-    }
-    // TODO, send message to pdcp
+  if(length == -1) {
+    LOG_I(NR_RRC, "do_Paging error");
+    return -1;
+  }
+  // TODO, send message to pdcp
 
-    return 0;
+  return 0;
 }
 
 void nr_rrc_trigger(protocol_ctxt_t *ctxt, int CC_id, int frame, int subframe)

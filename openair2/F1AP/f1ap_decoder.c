@@ -78,13 +78,13 @@ static int f1ap_decode_initiating_message(F1AP_F1AP_PDU_t *pdu) {
     case F1AP_ProcedureCode_id_UEContextSetup:
       LOG_I(F1AP, "%s(): F1AP_ProcedureCode_id_UEContextSetup\n", __func__);
       break;
-    
+
     case F1AP_ProcedureCode_id_UEContextModification:
       LOG_I(F1AP, "%s(): F1AP_ProcedureCode_id_UEContextModification\n", __func__);
       break;
 
     case F1AP_ProcedureCode_id_Paging:
-        LOG_I(F1AP, "%s(): F1AP_ProcedureCode_id_Paging\n", __func__);
+      LOG_I(F1AP, "%s(): F1AP_ProcedureCode_id_Paging\n", __func__);
       break;
 
     // case F1AP_ProcedureCode_id_InitialContextSetup:

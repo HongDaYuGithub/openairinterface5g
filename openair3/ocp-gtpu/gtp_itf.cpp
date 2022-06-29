@@ -628,7 +628,7 @@ teid_t newGtpuCreateTunnel(instance_t instance, rnti_t rnti, int incoming_bearer
   pthread_mutex_unlock(&globGtp.gtp_lock);
   char ip4[INET_ADDRSTRLEN];
   char ip6[INET6_ADDRSTRLEN];
-  LOG_I(GTPU, "[%ld] Created tunnel for RNTI 0x%04x, teid for DL: %x, teid for UL %x to remote IPv4: %s, IPv6 %s\n",
+  LOG_I(GTPU, "[%ld] Created tunnel for RNTI %04x, teid for DL: %x, teid for UL %x to remote IPv4: %s, IPv6 %s\n",
         instance,
         rnti,
         tmp->teid_incoming,
@@ -740,14 +740,14 @@ int gtpv1u_update_ngu_tunnel(const instance_t instanceP,
                              const gtpv1u_gnb_create_tunnel_req_t *const  create_tunnel_req_pP,
                              const rnti_t prior_rnti) {
 
-  LOG_D(GTPU, "[%ld] Start update tunnels for RNTI %x\n", instanceP, prior_rnti);
+  LOG_D(GTPU, "[%ld] Start update tunnels for RNTI %04x\n", instanceP, prior_rnti);
 
   pthread_mutex_lock(&globGtp.gtp_lock);
 
   auto inst=&globGtp.instances[compatInst(instanceP)];
   auto it=inst->ue2te_mapping.find(prior_rnti);
   if ( it == inst->ue2te_mapping.end() ) {
-    LOG_W(GTPU,"[%ld] Delete GTP tunnels for rnti: 0x%04x, but no tunnel exits\n", instanceP, prior_rnti);
+    LOG_W(GTPU,"[%ld] Delete GTP tunnels for RNTI: %04x, but no tunnel exits\n", instanceP, prior_rnti);
     pthread_mutex_unlock(&globGtp.gtp_lock);
     return GTPNOK;
   }

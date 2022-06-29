@@ -267,7 +267,7 @@ uint8_t compute_ri_bitlen(struct NR_CSI_ReportConfig *csi_reportconfig,
     }
     return ri_restriction;
   }
-  else 
+  else
     AssertFatal(1==0,"Other configurations not yet implemented\n");
   return -1;
 }
@@ -1902,16 +1902,19 @@ void nr_sr_reporting(gNB_MAC_INST *nrmac, frame_t SFN, sub_frame_t slot)
     if (sched_ctrl->active_ubwp) {
       pucch_Config = sched_ctrl->active_ubwp->bwp_Dedicated->pucch_Config->choice.setup;
     } else if (UE->CellGroup &&
-             UE->CellGroup->spCellConfig &&
-             UE->CellGroup->spCellConfig->spCellConfigDedicated &&
-             UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig &&
-             UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP &&
-             UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup) {
+               UE->CellGroup->spCellConfig &&
+               UE->CellGroup->spCellConfig->spCellConfigDedicated &&
+               UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig &&
+               UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP &&
+               UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup) {
       pucch_Config = UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup;
+    } else {
+      LOG_D(NR_MAC,"pucch is NULL skip SR scheduling for UE %d\n", UE->rnti);
+      continue;
     }
-    else continue;
-    if (!pucch_Config->schedulingRequestResourceToAddModList) 
-        continue;
+
+    if (!pucch_Config->schedulingRequestResourceToAddModList)
+      continue;
 
     AssertFatal(pucch_Config->schedulingRequestResourceToAddModList->list.count>0,"NO SR configuration available");
 

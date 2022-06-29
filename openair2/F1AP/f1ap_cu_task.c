@@ -198,6 +198,12 @@ void *F1AP_CU_task(void *arg) {
                          &F1AP_PAGING_IND(received_msg));
         break;
 
+      case F1AP_PAGING_IND:
+        LOG_I(F1AP, "CU Task Received F1AP_PAGING_IND\n");
+        CU_send_Paging(ITTI_MSG_DESTINATION_INSTANCE(received_msg),
+                       &F1AP_PAGING_IND(received_msg));
+        break;
+
       //    case F1AP_SETUP_RESPONSE: // This is from RRC
       //    CU_send_F1_SETUP_RESPONSE(instance, *f1ap_setup_ind, &(F1AP_SETUP_RESP) f1ap_setup_resp)
       //        break;

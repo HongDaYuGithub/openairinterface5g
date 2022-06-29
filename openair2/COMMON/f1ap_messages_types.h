@@ -426,7 +426,6 @@ typedef struct f1ap_ue_context_release_s {
 } f1ap_ue_context_release_req_t, f1ap_ue_context_release_cmd_t,
   f1ap_ue_context_release_cplt_t;
 
-
 typedef struct f1ap_paging_ind_s {
     uint16_t ueidentityindexvalue;
     uint64_t fiveg_s_tmsi;
