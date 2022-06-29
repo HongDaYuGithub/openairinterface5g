@@ -589,6 +589,7 @@ void pf_dl(module_id_t module_id,
            int max_num_ue,
            int n_rb_sched,
            uint16_t *rballoc_mask) {
+
   gNB_MAC_INST *mac = RC.nrmac[module_id];
   NR_ServingCellConfigCommon_t *scc=mac->common_channels[0].ServingCellConfigCommon;
   // UEs that could be scheduled
@@ -943,6 +944,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
 
     NR_sched_pdsch_t *sched_pdsch = &sched_ctrl->sched_pdsch;
     UE->mac_stats.dl.current_bytes = 0;
+    UE->mac_stats.dl.current_rbs = 0;
     NR_CellGroupConfig_t *cg = UE->CellGroup;
 
     NR_BWP_DownlinkDedicated_t *bwpd =
@@ -1178,6 +1180,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
     dci_pdu->CceIndex = sched_ctrl->cce_index;
     dci_pdu->beta_PDCCH_1_0 = 0;
     dci_pdu->powerControlOffsetSS = 1;
+
     /* DCI payload */
     dci_pdu_rel15_t dci_payload;
     memset(&dci_payload, 0, sizeof(dci_pdu_rel15_t));
@@ -1264,6 +1267,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
                   current_harq_pid);
       T(T_GNB_MAC_RETRANSMISSION_DL_PDU_WITH_DATA, T_INT(module_id), T_INT(CC_id), T_INT(rnti),
         T_INT(frame), T_INT(slot), T_INT(current_harq_pid), T_INT(harq->round), T_BUFFER(harq->transportBlock, TBS));
+      UE->mac_stats.dl.total_rbs_retx += sched_pdsch->rbSize;
     } else { /* initial transmission */
       LOG_D(NR_MAC, "[%s] Initial HARQ transmission in %d.%d\n", __FUNCTION__, frame, slot);
       uint8_t *buf = (uint8_t *) harq->transportBlock;
@@ -1279,6 +1283,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
       int dlsch_total_bytes = 0;
       /* next, get RLC data */
       start_meas(&gNB_mac->rlc_data_req);
+      int sdus = 0;
 
       if (sched_ctrl->num_total_bytes > 0) {
         /* loop over all activated logical channels */
@@ -1330,6 +1335,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
             buf += len+sizeof(NR_MAC_SUBHEADER_LONG);
             dlsch_total_bytes += len;
             lcid_bytes += len;
+            sdus += 1;
           }
 
           UE->mac_stats.dl.lc_bytes[lcid] += lcid_bytes;
@@ -1355,6 +1361,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
           }
           for (; buf < bufEnd; buf++)
             *buf = lrand48() & 0xff;
+          sdus +=1;
         }
       }
 
@@ -1372,6 +1379,11 @@ void nr_schedule_ue_spec(module_id_t module_id,
 
       UE->mac_stats.dl.total_bytes += TBS;
       UE->mac_stats.dl.current_bytes = TBS;
+      UE->mac_stats.dl.total_rbs += sched_pdsch->rbSize;
+      UE->mac_stats.dl.num_mac_sdu += sdus;
+      UE->mac_stats.dl.current_rbs = sched_pdsch->rbSize;
+
+
       /* save retransmission information */
       harq->sched_pdsch = *sched_pdsch;
       /* save which time allocation has been used, to be used on
@@ -1405,6 +1417,7 @@ void nr_schedule_ue_spec(module_id_t module_id,
     gNB_mac->TX_req[CC_id].Number_of_PDUs++;
     gNB_mac->TX_req[CC_id].SFN = frame;
     gNB_mac->TX_req[CC_id].Slot = slot;
+
     /* mark UE as scheduled */
     sched_pdsch->rbSize = 0;
   }

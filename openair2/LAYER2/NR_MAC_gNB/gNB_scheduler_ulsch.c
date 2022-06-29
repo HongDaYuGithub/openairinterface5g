@@ -96,6 +96,7 @@ int nr_process_mac_pdu( instance_t module_idP,
 
 
     uint8_t done = 0;
+    int sdus = 0;
 
     NR_UE_sched_ctrl_t *sched_ctrl = &UE->UE_sched_ctrl;
 
@@ -359,13 +360,14 @@ int nr_process_mac_pdu( instance_t module_idP,
                            mac_len,
                            1,
                            NULL);
-
+          sdus += 1;
           /* Updated estimated buffer when receiving data */
           if (sched_ctrl->estimated_ul_buffer >= mac_len)
             sched_ctrl->estimated_ul_buffer -= mac_len;
           else
             sched_ctrl->estimated_ul_buffer = 0;
           break;
+          sdus += 1;
 
         default:
           LOG_E(NR_MAC, "Received unknown MAC header (LCID = 0x%02x)\n", rx_lcid);
@@ -397,6 +399,9 @@ int nr_process_mac_pdu( instance_t module_idP,
           return 0;
         }
     }
+
+  UE->mac_stats.ul.num_mac_sdu += sdus;
+
   return 0;
 }
 
@@ -1585,6 +1590,8 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
        * retransmissions */
       cur_harq->sched_pusch.time_domain_allocation = ps->time_domain_allocation;
       sched_ctrl->sched_ul_bytes += sched_pusch->tb_size;
+      UE->mac_stats.ul.total_rbs += sched_pusch->rbSize;
+
     } else {
       LOG_D(NR_MAC,
             "%d.%2d UL retransmission RNTI %04x sched %d.%2d HARQ PID %d round %d NDI %d\n",
@@ -1596,6 +1603,7 @@ void nr_schedule_ulsch(module_id_t module_id, frame_t frame, sub_frame_t slot)
             harq_id,
             cur_harq->round,
             cur_harq->ndi);
+      UE->mac_stats.ul.total_rbs_retx += sched_pusch->rbSize;
     }
     UE->mac_stats.ul.current_bytes = sched_pusch->tb_size;
     sched_ctrl->last_ul_frame = sched_pusch->frame;
