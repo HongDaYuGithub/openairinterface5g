@@ -1195,6 +1195,7 @@ void *gtpv1uTask(void *args)  {
         case GTPV1U_GNB_TUNNEL_DATA_REQ: {
           gtpv1uSend2(compatInst(ITTI_MSG_DESTINATION_INSTANCE(message_p)),
                       &GTPV1U_GNB_TUNNEL_DATA_REQ(message_p), false, false);
+          itti_free(TASK_GTPV1_U, GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).buffer);
         }
         break;
 
