@@ -61,6 +61,9 @@
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "targets/ARCH/COMMON/common_lib.h"
 #include "targets/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.h"
+#include "openair1/PHY/phy_extern.h"
+#include "targets/RT/USER/lte-softmodem.h"
+#include "openair1/SCHED/sched_common_extern.h"
 
 /* these variables have to be defined before including ENB_APP/enb_paramdef.h */
 static int DEFBANDS[] = {7};
@@ -78,7 +81,6 @@ static int DEFBFW[] = {0x00007fff};
 
 #define MBMS_EXPERIMENTAL
 
-extern volatile int oai_exit;
 extern clock_source_t clock_source;
 #include "executables/thread-common.h"
 //extern PARALLEL_CONF_t get_thread_parallel_conf(void);
@@ -87,40 +89,19 @@ extern void phy_init_RU(RU_t *);
 
 void prach_procedures(PHY_VARS_eNB *eNB,int br_flag);
 
-void stop_RU(RU_t **rup,int nb_ru);
+static void do_ru_synch(RU_t *ru);
 
-void do_ru_synch(RU_t *ru);
-
-void configure_ru(int idx,
-                  void *arg);
-
-void configure_rru(int idx,
-                   void *arg);
-
-void reset_proc(RU_t *ru);
-int connect_rau(RU_t *ru);
-
-void wait_eNBs(void);
 
 const char ru_states[6][9] = {"RU_IDLE","RU_CONFIG","RU_READY","RU_RUN","RU_ERROR","RU_SYNC"};
 
-extern const char NB_functions[7][20];
-extern const char NB_timing[2][20];
-
-
-extern const char ru_if_types[MAX_RU_IF_TYPES][20];
-
-
-#if defined(PRE_SCD_THREAD)
 #include "common/ran_context.h"
+#if defined(PRE_SCD_THREAD)
 #include "nfapi/oai_integration/vendor_ext.h"
 #include "openair2/LAYER2/MAC/mac_extern.h"
   extern uint8_t dlsch_ue_select_tbl_in_use;
   void init_ru_vnf(void);
   extern RAN_CONTEXT_t RC;
 #endif
-
-RU_t **RCconfig_RU(int nb_RU,int nb_L1_inst,PHY_VARS_eNB ***eNB,uint64_t *ru_mask,pthread_mutex_t *ru_mutex,pthread_cond_t *ru_cond);
 
 /*************************************************************/
 /* Functions to attach and configure RRU                     */
@@ -1059,7 +1040,7 @@ int wakeup_synch(RU_t *ru) {
 }
 
 
-void do_ru_synch(RU_t *ru) {
+static void do_ru_synch(RU_t *ru) {
   LTE_DL_FRAME_PARMS *fp  = ru->frame_parms;
   RU_proc_t *proc         = &ru->proc;
   int rxs, ic, ret, i;
@@ -1924,7 +1905,7 @@ static void *ru_thread( void *param ) {
 
 
 // This thread run the initial synchronization like a UE
-void *ru_thread_synch(void *arg) {
+static void *ru_thread_synch(void *arg) {
   RU_t *ru = (RU_t *)arg;
   __attribute__((unused))
   LTE_DL_FRAME_PARMS *fp = ru->frame_parms;
@@ -2179,20 +2160,6 @@ int stop_rf(RU_t *ru) {
     }
   return 0;
 }
-
-
-extern void configure_ru(int idx, void *arg);
-extern void fep_full(RU_t *ru, int subframe);
-extern void feptx_ofdm(RU_t *ru, int frame_tx, int tti_tx);
-extern void feptx_ofdm_2thread(RU_t *ru, int frame_tx, int tti_tx);
-extern void feptx_prec(RU_t *ru, int frame_tx, int tti_tx);
-extern void init_fep_thread(RU_t *ru, pthread_attr_t *attr_fep);
-extern void init_feptx_thread(RU_t *ru, pthread_attr_t *attr_feptx);
-extern void kill_fep_thread(RU_t *ru);
-extern void kill_feptx_thread(RU_t *ru);
-extern void ru_fep_full_2thread(RU_t *ru, int subframe);
-extern void *ru_thread_control( void *param );
-
 
 void reset_proc(RU_t *ru) {
   int i=0;
@@ -2805,10 +2772,10 @@ void stop_ru(RU_t *ru) {
 }
 
 
-void stop_RU(RU_t **rup,int nb_ru) {
+void stop_RU(int nb_ru) {
   for (int inst = 0; inst < nb_ru; inst++) {
     LOG_I(PHY, "Stopping RU %d processing threads\n", inst);
-    kill_RU_proc(rup[inst]);
+    kill_RU_proc(RC.ru[inst]);
   }
 }
 

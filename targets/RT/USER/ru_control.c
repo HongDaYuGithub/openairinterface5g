@@ -65,13 +65,11 @@
 #include "PHY/INIT/phy_init.h"
 
 #include "common/utils/LOG/log.h"
-
+#include "targets/RT/USER/lte-softmodem.h"
+#include "common/ran_context.h"
 
 int attach_rru(RU_t *ru);
-void configure_ru(RU_t *ru, void *arg);
-void configure_rru(RU_t *ru, void *arg);
 void fill_rf_config(RU_t *ru, char *rf_config_file);
-void* ru_thread_control( void* param );
 
 extern int setup_RU_buffers(RU_t *ru);
 extern void reset_proc(RU_t *ru);
@@ -82,7 +80,6 @@ const char rru_format_options[4][20] = {"OAI_IF5_only","OAI_IF4p5_only","OAI_IF5
 const char rru_formats[3][20] = {"OAI_IF5","MBP_IF5","OAI_IF4p5"};
 const char ru_if_formats[4][20] = {"LOCAL_RF","REMOTE_OAI_IF5","REMOTE_MBP_IF5","REMOTE_OAI_IF4p5"};
 
-extern int oai_exit;
 extern void wait_eNBs(void);
 
 int send_tick(RU_t *ru)
@@ -209,7 +206,7 @@ int attach_rru(RU_t *ru)
       LOG_E(PHY,"Received incorrect message %d from RRU %d\n",rru_config_msg.type,ru->idx); 
     }
   }
-  configure_ru(ru,
+  configure_ru(ru->idx,
 	       (RRU_capabilities_t *)&rru_config_msg.msg[0]);
 		    
   rru_config_msg.type = RRU_config;
@@ -320,7 +317,7 @@ int connect_rau(RU_t *ru)
 	    ((RRU_config_t *)&rru_config_msg.msg[0])->prach_FreqOffset[0],
 	    ((RRU_config_t *)&rru_config_msg.msg[0])->prach_ConfigIndex[0]);
       
-      configure_rru(ru,
+      configure_rru(ru->idx,
 		    (void*)&rru_config_msg.msg[0]);
       configuration_received = 1;
     }
@@ -373,9 +370,10 @@ int check_capabilities(RU_t *ru,
   return(-1);
 }
 
-void configure_ru(RU_t *ru,
+void configure_ru(int idx,
                   void *arg)
 {
+  RU_t *ru=RC.ru[idx];
   RRU_config_t       *config       = (RRU_config_t *)arg;
   RRU_capabilities_t *capabilities = (RRU_capabilities_t*)arg;
   int ret;
@@ -424,9 +422,10 @@ void configure_ru(RU_t *ru,
   phy_init_RU(ru);
 }
 
-void configure_rru(RU_t *ru,
+void configure_rru(int idx,
                    void *arg)
 {
+  RU_t *ru=RC.ru[idx];
   RRU_config_t *config = (RRU_config_t *)arg;
 
   ru->frame_parms->eutra_band                                               = config->band_list[0];
@@ -561,7 +560,7 @@ void* ru_thread_control( void* param )
 		      ((RRU_capabilities_t*)&rru_config_msg.msg[0])->nb_tx[0],
 		      ((RRU_capabilities_t*)&rru_config_msg.msg[0])->nb_rx[0]);
 
-		configure_ru(ru,(RRU_capabilities_t *)&rru_config_msg.msg[0]);
+		configure_ru(ru->idx,(RRU_capabilities_t *)&rru_config_msg.msg[0]);
 
 		// send config
 		if (send_config(ru,rru_config_msg) == 0) ru->state = RU_CONFIG;
@@ -585,7 +584,7 @@ void* ru_thread_control( void* param )
 		      ((RRU_config_t *)&rru_config_msg.msg[0])->prach_ConfigIndex[0]);
 	      
 		ru->frame_parms = calloc(1, sizeof(*ru->frame_parms));
-		configure_rru(ru, (void*)&rru_config_msg.msg[0]);
+		configure_rru(ru->idx, (void*)&rru_config_msg.msg[0]);
 
  					  
 		fill_rf_config(ru,ru->rf_config_file);
