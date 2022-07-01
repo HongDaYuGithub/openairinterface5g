@@ -4726,8 +4726,8 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
   uint8_t i = 0;
 
   for (i = 0; i < MAX_MOBILES_PER_ENB; i++) {
-    if ((UE_PF_PO[CC_id][i].enable_flag == TRUE && UE_PF_PO[CC_id][i].ue_index_value == (uint16_t)(tmsi%1024))
-        || (UE_PF_PO[CC_id][i].enable_flag != TRUE)) {
+    if ((UE_PF_PO[CC_id][i].enable_flag == true && UE_PF_PO[CC_id][i].ue_index_value == (uint16_t)(tmsi%1024))
+        || (UE_PF_PO[CC_id][i].enable_flag != true)) {
       /* set T = min(Tc,Tue) */
       UE_PF_PO[CC_id][i].T = T;
       /* set UE_ID */
@@ -4743,13 +4743,13 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
 
       // TODO,set PO
 
-      if (UE_PF_PO[CC_id][i].enable_flag == TRUE) {
+      if (UE_PF_PO[CC_id][i].enable_flag == true) {
         //paging exist UE log
         LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Update exist UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
               T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
       } else {
         /* set enable_flag */
-        UE_PF_PO[CC_id][i].enable_flag = TRUE;
+        UE_PF_PO[CC_id][i].enable_flag = true;
         //paging new UE log
         LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Insert a new UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
               T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
