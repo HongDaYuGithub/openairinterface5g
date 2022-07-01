@@ -536,10 +536,9 @@ rb_found:
 	itti_send_msg_to_task(TASK_DU_F1, ENB_MODULE_ID_TO_INSTANCE(0 /*ctxt_pP->module_id*/), msg);
 	return;
       } else {
-	MessageDef *msg = itti_alloc_new_message_sized(TASK_RLC_ENB, 0, GTPV1U_GNB_TUNNEL_DATA_REQ,
-						       sizeof(gtpv1u_gnb_tunnel_data_req_t) + size);
+	MessageDef *msg = itti_alloc_new_message(TASK_RLC_ENB, 0, GTPV1U_GNB_TUNNEL_DATA_REQ);
 	gtpv1u_gnb_tunnel_data_req_t *req=&GTPV1U_GNB_TUNNEL_DATA_REQ(msg);
-	req->buffer=(uint8_t*)(req+1);
+	req->buffer = itti_malloc(TASK_RLC_ENB, TASK_GTPV1_U, size); // why + 1??
 	memcpy(req->buffer,buf,size);
 	req->length=size;
 	req->offset=0;
