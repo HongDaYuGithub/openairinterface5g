@@ -140,6 +140,12 @@ class gtpEndPoints {
   pthread_mutex_t gtp_lock=PTHREAD_MUTEX_INITIALIZER;
   // the instance id will be the Linux socket handler, as this is uniq
   map<int, gtpEndPoint> instances;
+
+  ~gtpEndPoints() {
+    // automatically close all sockets on quit
+    for (const auto p : instances)
+      close(p.first);
+  }
 };
 
 gtpEndPoints globGtp;
@@ -1216,6 +1222,7 @@ void *gtpv1uTask(void *args)  {
         case GTPV1U_GNB_TUNNEL_DATA_REQ: {
           gtpv1uSend2(compatInst(ITTI_MSG_DESTINATION_INSTANCE(message_p)),
                       &GTPV1U_GNB_TUNNEL_DATA_REQ(message_p), false, false);
+          itti_free(TASK_GTPV1_U, GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).buffer);
         }
         break;
 

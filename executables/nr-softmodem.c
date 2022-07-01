@@ -93,7 +93,7 @@ int sync_var=-1; //!< protected by mutex \ref sync_mutex.
 int config_sync_var=-1;
 
 volatile int             start_gNB = 0;
-volatile int             oai_exit = 0;
+int oai_exit = 0;
 
 static int wait_for_sync = 0;
 
@@ -833,14 +833,12 @@ int main( int argc, char **argv ) {
 
   /* release memory used by the RU/gNB threads (incomplete), after all
    * threads have been stopped (they partially use the same memory) */
-  for (int inst = 0; inst < NB_gNB_INST; inst++) {
-    //free_transport(RC.gNB[inst]);
-    phy_free_nr_gNB(RC.gNB[inst]);
+  for (int inst = 0; inst < NB_RU; inst++) {
+    nr_phy_free_RU(RC.ru[inst]);
   }
 
-  for (int inst = 0; inst < NB_RU; inst++) {
-    kill_NR_RU_proc(inst);
-    nr_phy_free_RU(RC.ru[inst]);
+  for (int inst = 0; inst < NB_gNB_INST; inst++) {
+    phy_free_nr_gNB(RC.gNB[inst]);
   }
 
   pthread_cond_destroy(&sync_cond);
@@ -852,9 +850,6 @@ int main( int argc, char **argv ) {
   // *** Handle per CC_id openair0
 
   for(ru_id=0; ru_id<NB_RU; ru_id++) {
-    if (RC.ru[ru_id]->rfdevice.trx_end_func)
-      RC.ru[ru_id]->rfdevice.trx_end_func(&RC.ru[ru_id]->rfdevice);
-
     if (RC.ru[ru_id]->ifdevice.trx_end_func)
       RC.ru[ru_id]->ifdevice.trx_end_func(&RC.ru[ru_id]->ifdevice);
   }
