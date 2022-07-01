@@ -672,7 +672,6 @@ typedef struct {
 } NR_UE_sched_ctrl_t;
 
 typedef struct {
-  boolean_t fiveG_connected;
   uicc_t *uicc;
 } NRUEcontext_t;
 
