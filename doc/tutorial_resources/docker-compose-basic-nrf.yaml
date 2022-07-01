@@ -21,7 +21,7 @@ services:
             public_net:
                 ipv4_address: 192.168.70.131
     oai-udr:
-        container_name: oai-udr
+        container_name: "oai-udr"
         image: oai-udr:develop
         environment:
             - TZ=Europe/Paris
@@ -57,7 +57,7 @@ services:
             timeout: 5s
             retries: 5
     oai-udm:
-        container_name: oai-udm
+        container_name: "oai-udm"
         image: oai-udm:develop
         environment:
             - TZ=Europe/Paris
@@ -90,7 +90,7 @@ services:
             timeout: 5s
             retries: 5
     oai-ausf:
-        container_name: oai-ausf
+        container_name: "oai-ausf"
         image: oai-ausf:develop
         environment:
             - TZ=Europe/Paris
