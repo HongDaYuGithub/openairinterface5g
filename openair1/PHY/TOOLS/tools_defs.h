@@ -29,14 +29,14 @@
 
 */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
 #include "PHY/sse_intrin.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define CEILIDIV(a,b) ((a+b-1)/b)
 #define ROUNDIDIV(a,b) (((a<<1)+b)/(b<<1))
@@ -60,14 +60,86 @@ typedef struct complex32 {
   int32_t r;
   int32_t i;
 } c32_t;
-  
+
 typedef struct complex64 {
   int64_t r;
   int64_t i;
 } c64_t;
 
 #define squaredMod(a) ((a).r*(a).r+(a).i*(a).i)
-#define csum(res, i1, i2) (res).r=(i1).r+(i2).r ; (res).i=(i1).i+(i2).i  
+#define csum(res, i1, i2) (res).r=(i1).r+(i2).r ; (res).i=(i1).i+(i2).i
+
+__attribute__((always_inline)) inline c16_t c16mulShift(c16_t a, c16_t b, int Shift) {
+  return (c16_t) {
+    .r=(int16_t)((a.r*b.r-a.i*b.i)>>Shift),
+    .i=(int16_t)((a.r*b.i+a.i*b.r)>>Shift)
+  };
+}
+
+__attribute__((always_inline)) inline c16_t c16maddShift(c16_t a, c16_t b, c16_t c, int Shift) {
+  return (c16_t) {
+    .r=(int16_t)((a.r*b.r-a.i*b.i+c.r)>>Shift),
+    .i=(int16_t)((a.r*b.i+a.i*b.r+c.i)>>Shift)
+  };
+}
+
+__attribute__((always_inline)) inline c32_t c32x16mulShift(c16_t a, c16_t b, int Shift) {
+  return (c32_t) {
+    .r=(a.r*b.r-a.i*b.i)>>Shift,
+    .i=(a.r*b.i+a.i*b.r)>>Shift
+  };
+}
+
+__attribute__((always_inline)) inline c32_t c32x16maddShift(c16_t a, c16_t b, c32_t c, int Shift) {
+  return (c32_t) {
+    .r=(a.r*b.r-a.i*b.i+c.r)>>Shift,
+    .i=(a.r*b.i+a.i*b.r+c.i)>>Shift
+  };
+}
+
+__attribute__((always_inline)) inline c16_t c16x32div(c32_t a, int div) {
+  return (c16_t) {
+    .r=(int16_t)(a.r/div), .i=(int16_t)(a.i/div)
+  };
+}
+
+__attribute__((always_inline)) inline void multadd_real_vect_complex_scalar(int16_t *x,
+    c16_t *alpha,
+    c16_t *y, int N) {
+  /*
+   const c16_t ac16=*(c16_t*)alpha;
+  c16_t* yc16=(c16_t*)y;
+  for (int i=0; i<8; i++) {
+    yc16[i].r+=(x[i]*ac16.r)>>14;
+    yc16[i].i+=(x[i]*ac16.i)>>14;
+  }
+  */
+#ifdef __AVX2__
+  __m256i alpha256= _mm256_set1_epi32(*(int32_t *)alpha);
+  __m128i *x128=(__m128i *)x;
+  __m128i *y128=(__m128i *)y;
+
+  for (int i=0; i<N/8; i++) {
+    __m256i xx=_mm256_setr_m128i(*x128,*x128);
+    xx=_mm256_unpacklo_epi16(xx,xx);
+    __m256i tmp=_mm256_mulhi_epi16(alpha256,xx);
+    tmp=_mm256_slli_epi16(tmp,2);
+    *y128= _mm_adds_epi16(_mm256_extracti128_si256(tmp,0),*y128);
+    y128++;
+    *y128= _mm_adds_epi16(_mm256_extracti128_si256(tmp,1),*y128);
+    y128++;
+    x128++;
+  }
+
+#else
+
+  for (int i=0; i<N; i++) {
+    y[i].r+=(int16_t)((x[i]*alpha[0].r)>>14);
+    y[i].i+=(int16_t)((x[i]*alpha[0].i)>>14);
+  }
+
+#endif
+}
 //cmult_sv.h
 
 /*!\fn void multadd_real_vector_complex_scalar(int16_t *x,int16_t *alpha,int16_t *y,uint32_t N)
@@ -85,8 +157,8 @@ void multadd_real_vector_complex_scalar(int16_t *x,
                                         uint32_t N);
 
 void multadd_real_four_symbols_vector_complex_scalar(int16_t *x,
-                                                     int16_t *alpha,
-                                                     int16_t *y);
+    int16_t *alpha,
+    int16_t *y);
 
 /*!\fn void multadd_complex_vector_real_scalar(int16_t *x,int16_t alpha,int16_t *y,uint8_t zero_flag,uint32_t N)
 This function performs componentwise multiplication and accumulation of a real scalar and a complex vector.
@@ -122,7 +194,7 @@ int rotate_cpx_vector(int16_t *x,
 
 //cmult_vv.c
 /*!
-  Multiply elementwise the complex conjugate of x1 with x2. 
+  Multiply elementwise the complex conjugate of x1 with x2.
   @param x1       - input 1    in the format  |Re0 Im0 Re1 Im1|,......,|Re(N-2)  Im(N-2) Re(N-1) Im(N-1)|
               We assume x1 with a dinamic of 15 bit maximum
   @param x2       - input 2    in the format  |Re0 Im0 Re1 Im1|,......,|Re(N-2)  Im(N-2) Re(N-1) Im(N-1)|
@@ -329,51 +401,69 @@ typedef enum dft_size_idx {
 *
 *********************************************************************/
 static inline
-dft_size_idx_t get_dft(int ofdm_symbol_size)
-{
+dft_size_idx_t get_dft(int ofdm_symbol_size) {
   switch (ofdm_symbol_size) {
     case 128:
       return DFT_128;
+
     case 256:
       return DFT_256;
+
     case 512:
       return DFT_512;
+
     case 1024:
       return DFT_1024;
+
     case 1536:
       return DFT_1536;
+
     case 2048:
       return DFT_2048;
+
     case 3072:
       return DFT_3072;
+
     case 4096:
       return DFT_4096;
+
     case 6144:
       return DFT_6144;
+
     case 8192:
       return DFT_8192;
+
     case 9216:
       return DFT_9216;
+
     case 12288:
       return DFT_12288;
+
     case 18432:
       return DFT_18432;
+
     case 24576:
       return DFT_24576;
+
     case 36864:
       return DFT_36864;
+
     case 49152:
       return DFT_49152;
+
     case 73728:
       return DFT_73728;
+
     case 98304:
       return DFT_98304;
+
     default:
       printf("function get_dft : unsupported ofdm symbol size \n");
       assert(0);
       break;
- }
- return DFT_SIZE_IDXTABLESIZE; // never reached and will trigger assertion in idft function;
+  }
+
+  return DFT_SIZE_IDXTABLESIZE; // never reached and will trigger assertion in idft function;
 }
 
 typedef enum idft_size_idx {
@@ -413,51 +503,69 @@ struct {
 *
 *********************************************************************/
 static inline
-idft_size_idx_t get_idft(int ofdm_symbol_size)
-{
+idft_size_idx_t get_idft(int ofdm_symbol_size) {
   switch (ofdm_symbol_size) {
     case 128:
       return IDFT_128;
+
     case 256:
       return IDFT_256;
+
     case 512:
       return IDFT_512;
+
     case 1024:
       return IDFT_1024;
+
     case 1536:
       return IDFT_1536;
+
     case 2048:
       return IDFT_2048;
+
     case 3072:
       return IDFT_3072;
+
     case 4096:
       return IDFT_4096;
+
     case 6144:
       return IDFT_6144;
+
     case 8192:
       return IDFT_8192;
+
     case 9216:
       return IDFT_9216;
+
     case 12288:
       return IDFT_12288;
+
     case 18432:
       return IDFT_18432;
+
     case 24576:
       return IDFT_24576;
+
     case 36864:
       return IDFT_36864;
+
     case 49152:
       return IDFT_49152;
+
     case 73728:
       return IDFT_73728;
+
     case 98304:
       return IDFT_98304;
+
     default:
       printf("function get_idft : unsupported ofdm symbol size \n");
       assert(0);
       break;
- }
- return IDFT_SIZE_IDXTABLESIZE; // never reached and will trigger assertion in idft function
+  }
+
+  return IDFT_SIZE_IDXTABLESIZE; // never reached and will trigger assertion in idft function
 }
 
 
