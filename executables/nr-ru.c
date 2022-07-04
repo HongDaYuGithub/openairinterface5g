@@ -1563,11 +1563,6 @@ void kill_NR_RU_proc(int inst) {
 
   if (ru->feptx_ofdm)
     nr_kill_feptx_thread(ru);
-
-  if (opp_enabled) {
-    LOG_D(PHY, "Joining ru_stats_thread\n");
-    pthread_join(ru->ru_stats_thread, NULL);
-  }
 }
 
 int check_capabilities(RU_t *ru,RRU_capabilities_t *cap) {
