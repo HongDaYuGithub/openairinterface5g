@@ -382,8 +382,7 @@ static inline int abortTpool(tpool_t *t) {
   /* join threads that are still runing */
   thread = t->allthreads;
   while (thread != NULL) {
-    void *rc;
-    pthread_join(thread->threadID, &rc);
+    pthread_cancel(thread->threadID);
     thread = thread->next;
   }
 
