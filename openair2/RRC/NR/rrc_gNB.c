@@ -382,7 +382,9 @@ rrc_gNB_generate_RRCSetup(
 
     break;
 
-    case ngran_gNB_DU:
+  case ngran_gNB_DU:
+  case ngran_gNB_CUCP:
+  case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
       break;
@@ -530,6 +532,7 @@ rrc_gNB_generate_RRCReject(
 
   switch (RC.nrrrc[ctxt_pP->module_id]->node_type) {
     case ngran_gNB_CU:
+    case ngran_gNB_CUCP:
       // create an ITTI message
       message_p = itti_alloc_new_message (TASK_RRC_GNB, 0, F1AP_DL_RRC_MESSAGE);
       F1AP_DL_RRC_MESSAGE (message_p).rrc_container        = (uint8_t *)ue_p->Srb0.Tx_buffer.Payload;
@@ -546,6 +549,7 @@ rrc_gNB_generate_RRCReject(
       break;
 
     case ngran_gNB_DU:
+    case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
       break;
@@ -751,6 +755,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
           ue_context_pP->ue_context.rnti);
   switch (RC.nrrrc[ctxt_pP->module_id]->node_type) {
     case ngran_gNB_CU:
+    case ngran_gNB_CUCP:
       nr_rrc_data_req(ctxt_pP,
                   DCCH,
                   rrc_gNB_mui++,
@@ -763,6 +768,7 @@ rrc_gNB_generate_defaultRRCReconfiguration(
       break;
 
     case ngran_gNB_DU:
+    case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
       break;
@@ -4305,6 +4311,7 @@ rrc_gNB_generate_SecurityModeCommand(
 
   switch (RC.nrrrc[ctxt_pP->module_id]->node_type) {
     case ngran_gNB_CU:
+    case ngran_gNB_CUCP:
       // create an ITTI message
       memcpy(ue_context_pP->ue_context.Srb1.Srb_info.Tx_buffer.Payload, buffer, size);
       ue_context_pP->ue_context.Srb1.Srb_info.Tx_buffer.payload_size = size;
@@ -4320,6 +4327,7 @@ rrc_gNB_generate_SecurityModeCommand(
       break;
 
     case ngran_gNB_DU:
+    case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
       break;
@@ -4380,6 +4388,7 @@ rrc_gNB_generate_UECapabilityEnquiry(
         size);
   switch (RC.nrrrc[ctxt_pP->module_id]->node_type) {
     case ngran_gNB_CU:
+    case ngran_gNB_CUCP:
       nr_rrc_data_req(
         ctxt_pP,
         DCCH,
@@ -4391,6 +4400,7 @@ rrc_gNB_generate_UECapabilityEnquiry(
       break;
 
     case ngran_gNB_DU:
+    case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
       break;

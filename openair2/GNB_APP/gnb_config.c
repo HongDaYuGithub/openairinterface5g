@@ -86,7 +86,6 @@
 extern uint16_t sf_ahead;
 int macrlc_has_f1 = 0;
 extern ngran_node_t node_type;
-int cu_type;
 
 extern int config_check_band_frequencies(int ind, int16_t band, uint64_t downlink_frequency,
                                          int32_t uplink_frequency_offset, uint32_t  frame_type);
@@ -1163,7 +1162,6 @@ void RCconfig_NRRRC(MessageDef *msg_p, uint32_t i, gNB_RRC_INST *rrc) {
     }
 
     rrc->node_type = node_type;
-    rrc->cu_type = cu_type;
 
     rrc->nr_cellid        = (uint64_t)*(GNBParamList.paramarray[i][GNB_NRCELLID_IDX].u64ptr);
 
@@ -2312,8 +2310,6 @@ void set_node_type(void) {
   config_getlist( &GNBParamList,GNBParams,sizeof(GNBParams)/sizeof(paramdef_t),NULL);  
   char aprefix[MAX_OPTNAME_SIZE*2 + 8];
   sprintf(aprefix, "%s.[%i]", GNB_CONFIG_STRING_GNB_LIST, 0);
-  config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), aprefix);
-
   if ( MacRLC_ParamList.numelt > 0) {
     RC.nb_nr_macrlc_inst = MacRLC_ParamList.numelt; 
     for (j=0;j<RC.nb_nr_macrlc_inst;j++) {
@@ -2325,12 +2321,17 @@ void set_node_type(void) {
 
   if (strcmp(*(GNBParamList.paramarray[0][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "f1") == 0) {
     node_type = ngran_gNB_CU;
-    if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "cp") == 0) {
-      cu_type = 0;
-    } else if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "up") == 0) {
-      cu_type = 1;
+    config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), aprefix);
+    if ( GNBE1ParamList.paramarray == NULL || GNBE1ParamList.numelt == 0 ) {
+      LOG_I(GNB_APP,"Operate as F1, no E1 split\n");
     } else {
-      AssertFatal(1 == 0, "Unknown E1 CU type parameter\n");
+      if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "cp") == 0) {
+        node_type = ngran_gNB_CUCP;
+      } else if (strcmp(*(GNBE1ParamList.paramarray[0][GNB_CONFIG_E1_CU_TYPE_IDX].strptr), "up") == 0) {
+        node_type = ngran_gNB_CUUP;
+      } else {
+        AssertFatal(1 == 0, "Unknown E1 CU type parameter\n");
+      }
     }
   } else {
     if (macrlc_has_f1 == 0) {
