@@ -85,7 +85,6 @@
 
 extern uint16_t sf_ahead;
 int macrlc_has_f1 = 0;
-extern ngran_node_t node_type;
 
 extern int config_check_band_frequencies(int ind, int16_t band, uint64_t downlink_frequency,
                                          int32_t uplink_frequency_offset, uint32_t  frame_type);
@@ -1140,7 +1139,8 @@ void RCconfig_NRRRC(MessageDef *msg_p, uint32_t i, gNB_RRC_INST *rrc) {
 
     printf("NRRRC %d: Southbound Transport %s\n",i,*(GNBParamList.paramarray[i][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr));
 
-    if (strcmp(*(GNBParamList.paramarray[i][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "f1") == 0) {
+    rrc->node_type = set_node_type();
+    if (NODE_IS_CU(rrc->node_type)) {
       paramdef_t SCTPParams[]  = GNBSCTPPARAMS_DESC;
       char aprefix[MAX_OPTNAME_SIZE*2 + 8];
       sprintf(aprefix,"%s.[%u].%s",GNB_CONFIG_STRING_GNB_LIST,i,GNB_CONFIG_STRING_SCTP_CONFIG);
@@ -1161,7 +1161,7 @@ void RCconfig_NRRRC(MessageDef *msg_p, uint32_t i, gNB_RRC_INST *rrc) {
       rrc->sctp_out_streams                      = (uint16_t)*(SCTPParams[GNB_SCTP_OUTSTREAMS_IDX].uptr);
     }
 
-    rrc->node_type = node_type;
+   
 
     rrc->nr_cellid        = (uint64_t)*(GNBParamList.paramarray[i][GNB_NRCELLID_IDX].u64ptr);
 
@@ -2297,7 +2297,7 @@ int gNB_app_handle_f1ap_gnb_cu_configuration_update(f1ap_gnb_cu_configuration_up
   return(ret);
 }
 
-void set_node_type(void) {
+ngran_node_t set_node_type(void) {
   int               j;
   paramdef_t        MacRLC_Params[] = MACRLCPARAMS_DESC;
   paramlist_def_t   MacRLC_ParamList = {CONFIG_STRING_MACRLC_LIST,NULL,0};
@@ -2318,7 +2318,7 @@ void set_node_type(void) {
       }
     }
   }
-
+  ngran_node_t node_type;
   if (strcmp(*(GNBParamList.paramarray[0][GNB_TRANSPORT_S_PREFERENCE_IDX].strptr), "f1") == 0) {
     node_type = ngran_gNB_CU;
     config_getlist( &GNBE1ParamList, GNBE1Params, sizeof(GNBE1Params)/sizeof(paramdef_t), aprefix);
@@ -2342,6 +2342,7 @@ void set_node_type(void) {
       LOG_I(NR_RRC,"Setting node_type to ngran_gNB_DU\n");
     }
   }
+  return node_type;
 }
 
 void nr_read_config_and_init(void) {
@@ -2350,7 +2351,7 @@ void nr_read_config_and_init(void) {
   uint32_t    gnb_nb = RC.nb_nr_inst;
 
   RCconfig_NR_L1();
-  set_node_type();
+  RC.nrrrc[0]->node_type=set_node_type();
   RCconfig_nr_macrlc();
 
   LOG_I(PHY, "%s() RC.nb_nr_L1_inst:%d\n", __FUNCTION__, RC.nb_nr_L1_inst);
@@ -2374,7 +2375,7 @@ void nr_read_config_and_init(void) {
     RCconfig_NRRRC(msg_p,gnb_id, RC.nrrrc[gnb_id]);
   }
 
-  if (NODE_IS_CU(RC.nrrrc[0]->node_type)) {
+  if (NODE_IS_CU(RC.nrrrc[0]->node_type) && RC.nrrrc[0]->node_type != ngran_gNB_CUCP) {
     pdcp_layer_init();
 //    nr_DRB_preconfiguration(0x1234);
     rrc_init_nr_global_param();
