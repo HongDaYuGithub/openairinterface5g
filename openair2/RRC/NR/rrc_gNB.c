@@ -296,23 +296,7 @@ void apply_macrlc_config(gNB_RRC_INST *rrc,
 
 }
 
-void apply_pdcp_config(rrc_gNB_ue_context_t         *const ue_context_pP,
-                       const protocol_ctxt_t        *const ctxt_pP ) {
 
-      nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-                                  ue_context_pP->ue_context.SRB_configList,
-                                  NULL,
-                                  NULL,
-                                  0,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
-
-}
 
 //-----------------------------------------------------------------------------
 void
@@ -352,38 +336,30 @@ rrc_gNB_generate_RRCSetup(
               "[MSG] RRC Setup\n");
 
   switch (rrc->node_type) {
-    case ngran_gNB_CU:
+  case ngran_gNB_CU:
+  case ngran_gNB_CUCP:
       // create an ITTI message
       /* TODO: F1 IDs ar missing in RRC */
-      nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-				  ue_context_pP->ue_context.SRB_configList,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL,
-				  NULL);
-      message_p = itti_alloc_new_message (TASK_RRC_GNB, 0, F1AP_DL_RRC_MESSAGE);
-      F1AP_DL_RRC_MESSAGE (message_p).rrc_container        =  (uint8_t *)ue_p->Srb0.Tx_buffer.Payload;
-      F1AP_DL_RRC_MESSAGE (message_p).rrc_container_length = ue_p->Srb0.Tx_buffer.payload_size;
-      F1AP_DL_RRC_MESSAGE (message_p).gNB_CU_ue_id         = 0;
-      F1AP_DL_RRC_MESSAGE (message_p).gNB_DU_ue_id         = 0;
-      F1AP_DL_RRC_MESSAGE (message_p).old_gNB_DU_ue_id     = 0xFFFFFFFF; // unknown
-      F1AP_DL_RRC_MESSAGE (message_p).rnti                 = ue_p->rnti;
-      F1AP_DL_RRC_MESSAGE (message_p).srb_id               = CCCH;
-      F1AP_DL_RRC_MESSAGE (message_p).execute_duplication  = 1;
-      F1AP_DL_RRC_MESSAGE (message_p).RAT_frequency_priority_information.en_dc = 0;
-      itti_send_msg_to_task (TASK_CU_F1, ctxt_pP->module_id, message_p);
-      LOG_D(NR_RRC, "Send F1AP_DL_RRC_MESSAGE with ITTI\n");
+    nr_pdcp_add_srbs(ctxt_pP->enb_flag, ctxt_pP->rnti,
+                     ue_context_pP->ue_context.SRB_configList,
+                     0, NULL, NULL);
+    message_p = itti_alloc_new_message (TASK_RRC_GNB, 0, F1AP_DL_RRC_MESSAGE);
+    f1ap_dl_rrc_message_t * msg=&F1AP_DL_RRC_MESSAGE (message_p);
+    msg->rrc_container        =  (uint8_t *)ue_p->Srb0.Tx_buffer.Payload;
+    msg->rrc_container_length = ue_p->Srb0.Tx_buffer.payload_size;
+    msg->gNB_CU_ue_id         = 0;
+    msg->gNB_DU_ue_id         = 0;
+    msg->old_gNB_DU_ue_id     = 0xFFFFFFFF; // unknown
+    msg->rnti                 = ue_p->rnti;
+    msg->srb_id               = CCCH;
+    msg->execute_duplication  = 1;
+    msg->RAT_frequency_priority_information.en_dc = 0;
+    itti_send_msg_to_task (TASK_CU_F1, ctxt_pP->module_id, message_p);
+    LOG_D(NR_RRC, "Send F1AP_DL_RRC_MESSAGE with ITTI\n");
 
     break;
 
   case ngran_gNB_DU:
-  case ngran_gNB_CUCP:
   case ngran_gNB_CUUP:
       // nothing to do for DU
       AssertFatal(1==0,"nothing to do for DU\n");
@@ -425,7 +401,12 @@ rrc_gNB_generate_RRCSetup(
 
       apply_macrlc_config(rrc,ue_context_pP,ctxt_pP);
 
-      apply_pdcp_config(ue_context_pP,ctxt_pP);
+      nr_pdcp_add_srbs(ctxt_pP->enb_flag, ctxt_pP->rnti,
+                       ue_context_pP->ue_context.SRB_configList,
+                       0,
+                       NULL,
+                       NULL);
+
 #endif
     }
     break;
@@ -1456,19 +1437,21 @@ rrc_gNB_process_RRCReconfigurationComplete(
 #ifndef ITTI_SIM
   LOG_D(NR_RRC,"Configuring PDCP DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
 
-  nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-                              SRB_configList, // NULL,
-                              DRB_configList,
-                              DRB_Release_configList2,
-                              (ue_context_pP->ue_context.integrity_algorithm << 4)
-                              | ue_context_pP->ue_context.ciphering_algorithm,
-                              kRRCenc,
-                              kRRCint,
-                              kUPenc,
-                              kUPint,
-                              NULL,
-                              NULL,
-                              get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+  nr_pdcp_add_srbs(ctxt_pP->enb_flag, ctxt_pP->rnti,
+                   SRB_configList,
+                   (ue_context_pP->ue_context.integrity_algorithm << 4)
+                   | ue_context_pP->ue_context.ciphering_algorithm,
+                   kRRCenc,
+                   kRRCint);
+                   
+  nr_pdcp_add_drbs(ctxt_pP->enb_flag, ctxt_pP->rnti,
+                   DRB_configList,
+                   (ue_context_pP->ue_context.integrity_algorithm << 4)
+                   | ue_context_pP->ue_context.ciphering_algorithm,
+                   kUPenc,
+                   kUPint,
+                   get_softmodem_params()->sa ? ue_context_pP->ue_context.masterCellGroup->rlc_BearerToAddModList : NULL);
+  
   /* Refresh SRBs/DRBs */
   if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
     LOG_D(NR_RRC,"Configuring RLC DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
@@ -2335,27 +2318,6 @@ int nr_rrc_gNB_decode_ccch(protocol_ctxt_t    *const ctxt_pP,
           LOG_I(NR_RRC, PROTOCOL_NR_RRC_CTXT_UE_FMT"CALLING RLC CONFIG SRB1 (rbid %d)\n",
                 PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP),
                 Idx);
-          // nr_rrc_pdcp_config_asn1_req(ctxt_pP,
-          //                         ue_context_p->ue_context.SRB_configList,
-          //                         NULL,
-          //                         NULL,
-          //                         0xff,
-          //                         NULL,
-          //                         NULL,
-          //                         NULL,
-          //                         NULL,
-          //                         NULL,
-          //                         NULL,
-          //                         NULL);
-
-          // if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
-            // nr_rrc_rlc_config_asn1_req(ctxt_pP,
-            //                         ue_context_p->ue_context.SRB_configList,
-            //                         NULL,
-            //                         NULL,
-            //                         NULL,
-            //                         NULL);
-          // }
         }
         break;
 
