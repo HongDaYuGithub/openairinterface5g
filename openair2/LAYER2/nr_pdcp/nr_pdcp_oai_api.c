@@ -686,17 +686,11 @@ rb_found:
 
   ctxt.rnti = ue->rnti;
   if (RC.nrrrc != NULL && NODE_IS_CU(RC.nrrrc[0]->node_type)) {
-    MessageDef  *message_p = itti_alloc_new_message_sized(TASK_PDCP_ENB, 0,
-							  GTPV1U_GNB_TUNNEL_DATA_REQ,
-							  sizeof(gtpv1u_gnb_tunnel_data_req_t)
-							  + size
-							  + GTPU_HEADER_OVERHEAD_MAX);
+    MessageDef  *message_p = itti_alloc_new_message(TASK_PDCP_ENB, 0, GTPV1U_GNB_TUNNEL_DATA_REQ);
     AssertFatal(message_p != NULL, "OUT OF MEMORY");
     gtpv1u_gnb_tunnel_data_req_t *req=&GTPV1U_GNB_TUNNEL_DATA_REQ(message_p);
-    uint8_t *gtpu_buffer_p = (uint8_t*)(req+1);
-    memcpy(gtpu_buffer_p+GTPU_HEADER_OVERHEAD_MAX, 
-	   buf, size);
-    req->buffer        = gtpu_buffer_p;
+    req->buffer = itti_malloc(TASK_RLC_ENB, TASK_GTPV1_U, size + GTPU_HEADER_OVERHEAD_MAX);
+    memcpy(req->buffer + GTPU_HEADER_OVERHEAD_MAX, buf, size);
     req->length        = size;
     req->offset        = GTPU_HEADER_OVERHEAD_MAX;
     req->rnti          = ue->rnti;
