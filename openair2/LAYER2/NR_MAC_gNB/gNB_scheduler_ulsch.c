@@ -690,7 +690,7 @@ void nr_rx_sdu(const module_id_t gnb_mod_idP,
             LOG_D(NR_MAC,"(%i): 0x%02x\n",k,sduP[k]);
           }
           if(sduP[0]==0x04){
-            LOG_W(NR_MAC, "Bad SDU recieved. Random Access %i failed at state %i (Bad Msg3)\n", i, ra->state);
+            LOG_W(NR_MAC, "Bad SDU received. Random Access %i failed at state %i (Bad Msg3)\n", i, ra->state);
             nr_mac_remove_ra_rnti(gnb_mod_idP, ra->rnti);
             nr_clear_ra_proc(gnb_mod_idP, CC_idP, frameP, ra);
             mac_remove_nr_ue(gNB_mac, ra->rnti);

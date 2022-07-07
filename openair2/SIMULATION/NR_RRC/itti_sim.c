@@ -88,7 +88,7 @@ int nfapi_sync_var=-1; //!< protected by mutex \ref nfapi_sync_mutex
 
 uint32_t timing_advance = 0;
 uint64_t num_missed_slots=0;
-uint32_t       N_RB_DL=106;
+uint32_t N_RB_DL = 106;
 
 int split73=0;
 void sendFs6Ul(PHY_VARS_eNB *eNB, int UE_id, int harq_pid, int segmentID, int16_t *data, int dataLen, int r_offset) {

@@ -427,14 +427,14 @@ typedef struct f1ap_ue_context_release_s {
   f1ap_ue_context_release_cplt_t;
 
 typedef struct f1ap_paging_ind_s {
-    uint16_t ueidentityindexvalue;
-    uint64_t fiveg_s_tmsi;
-    uint8_t  fiveg_s_tmsi_length;
-    uint16_t mcc;
-    uint16_t mnc;
-    uint8_t  mnc_digit_length;
-    uint64_t nr_cellid;
-    uint8_t  paging_drx;
+  uint16_t ueidentityindexvalue;
+  uint64_t fiveg_s_tmsi;
+  uint8_t  fiveg_s_tmsi_length;
+  uint16_t mcc;
+  uint16_t mnc;
+  uint8_t  mnc_digit_length;
+  uint64_t nr_cellid;
+  uint8_t  paging_drx;
 } f1ap_paging_ind_t;
 
 #endif /* F1AP_MESSAGES_TYPES_H_ */

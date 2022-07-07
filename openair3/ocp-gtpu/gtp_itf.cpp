@@ -634,7 +634,7 @@ teid_t newGtpuCreateTunnel(instance_t instance, rnti_t rnti, int incoming_bearer
   pthread_mutex_unlock(&globGtp.gtp_lock);
   char ip4[INET_ADDRSTRLEN];
   char ip6[INET6_ADDRSTRLEN];
-  LOG_I(GTPU, "[%ld] Created tunnel for RNTI %04x, teid for DL: %x, teid for UL %x to remote IPv4: %s, IPv6 %s\n",
+  LOG_I(GTPU, "[%ld] Created tunnel for RNTI %04x, DL teid %x, UL teid %x, to remote IPv4 %s, IPv6 %s\n",
         instance,
         rnti,
         tmp->teid_incoming,
@@ -647,7 +647,7 @@ teid_t newGtpuCreateTunnel(instance_t instance, rnti_t rnti, int incoming_bearer
 int gtpv1u_create_s1u_tunnel(instance_t instance,
                              const gtpv1u_enb_create_tunnel_req_t  *create_tunnel_req,
                              gtpv1u_enb_create_tunnel_resp_t *create_tunnel_resp) {
-  LOG_D(GTPU, "[%ld] Start create tunnels for RNTI %x, num_tunnels %d, sgw_S1u_teid %x\n",
+  LOG_D(GTPU, "[%ld] Start create tunnels for RNTI %04x, num_tunnels %d, sgw_S1u_teid %x\n",
         instance,
         create_tunnel_req->rnti,
         create_tunnel_req->num_tunnels,

@@ -447,7 +447,7 @@ uint8_t do_SIB1_NR(rrc_gNB_carrier_data_t *carrier,
   initialDownlinkBWP->pdcch_ConfigCommon =
       configuration->scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon;
   initialDownlinkBWP->pdcch_ConfigCommon->choice.setup->commonSearchSpaceList =
-       CALLOC(1,sizeof(struct NR_PDCCH_ConfigCommon__commonSearchSpaceList));
+      CALLOC(1,sizeof(struct NR_PDCCH_ConfigCommon__commonSearchSpaceList));
 
   asn1cSequenceAdd(initialDownlinkBWP->pdcch_ConfigCommon->choice.setup->commonSearchSpaceList->list,
 		   NR_SearchSpace_t, ss1);

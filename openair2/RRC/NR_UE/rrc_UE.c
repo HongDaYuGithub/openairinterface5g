@@ -2731,8 +2731,8 @@ void rrc_ue_generate_RRCReestablishmentRequest(const protocol_ctxt_t *const ctxt
       do_RRCReestablishmentRequest(
           ctxt_pP->module_id,
           (uint8_t *)NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload, 0x1234);
-  LOG_I(NR_RRC,"[UE %d] : Frame %d, Logical Channel UL-CCCH (SRB0), Generating RRCReestablishmentRequest (bytes %d, gNB %d)\n",
-        ctxt_pP->module_id, ctxt_pP->frame, NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size, gNB_index);
+  LOG_I(NR_RRC,"(%d.%d) Logical Channel UL-CCCH (SRB0), Generating NR_RRCReestablishmentRequest (bytes %d, gNB %d)\n",
+        ctxt_pP->frame, ctxt_pP->subframe, NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size, gNB_index);
 
   for (int i=0; i<NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.payload_size; i++) {
     LOG_T(NR_RRC,"%x.",NR_UE_rrc_inst[ctxt_pP->module_id].Srb0[gNB_index].Tx_buffer.Payload[i]);

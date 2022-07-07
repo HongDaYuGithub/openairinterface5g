@@ -1922,7 +1922,7 @@ void nr_sr_reporting(gNB_MAC_INST *nrmac, frame_t SFN, sub_frame_t slot)
                UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup) {
       pucch_Config = UE->CellGroup->spCellConfig->spCellConfigDedicated->uplinkConfig->initialUplinkBWP->pucch_Config->choice.setup;
     } else {
-      LOG_D(NR_MAC,"pucch is NULL skip SR scheduling for UE %d\n", UE->rnti);
+      LOG_D(NR_MAC,"pucch is NULL skip SR scheduling for UE %04x\n", UE->rnti);
       continue;
     }
 

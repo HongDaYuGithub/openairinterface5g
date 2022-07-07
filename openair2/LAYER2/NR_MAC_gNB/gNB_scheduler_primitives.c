@@ -2972,23 +2972,31 @@ void nr_mac_update_timers(module_id_t module_id,
           // Schedule BWP switching to the first active BWP (previous active BWP before RA with Msg3 carrying DCCH or DTCH message)
           sched_ctrl->next_dl_bwp_id = current_bwp_id;
           sched_ctrl->next_ul_bwp_id = current_ubwp_id;
-
         } else if (spCellConfigDedicated &&
             spCellConfigDedicated->downlinkBWP_ToAddModList &&
             spCellConfigDedicated->uplinkConfig &&
             spCellConfigDedicated->uplinkConfig->uplinkBWP_ToAddModList) {
           sched_ctrl->active_bwp = spCellConfigDedicated->downlinkBWP_ToAddModList->list.array[*spCellConfigDedicated->firstActiveDownlinkBWP_Id - 1];
-          // Update next_dl_bwp_id to not trigger BWP switching, UE should be already on active_bwp
-          sched_ctrl->next_dl_bwp_id = sched_ctrl->active_bwp->bwp_Id;
           if (*spCellConfigDedicated->firstActiveDownlinkBWP_Id != current_bwp_id) {
             LOG_I(NR_MAC, "(%d.%d) Switching to DL-BWP %li\n", frame, slot, sched_ctrl->active_bwp->bwp_Id);
           }
           sched_ctrl->active_ubwp = spCellConfigDedicated->uplinkConfig->uplinkBWP_ToAddModList->list.array[*spCellConfigDedicated->uplinkConfig->firstActiveUplinkBWP_Id - 1];
-          // Update next_ul_bwp_id to not trigger BWP switching, UE should be already on active_ubwp
-          sched_ctrl->next_ul_bwp_id = sched_ctrl->active_ubwp->bwp_Id;
           if (*spCellConfigDedicated->uplinkConfig->firstActiveUplinkBWP_Id != current_ubwp_id) {
             LOG_I(NR_MAC, "(%d.%d) Switching to UL-BWP %li\n", frame, slot, sched_ctrl->active_ubwp->bwp_Id);
           }
+
+          // Update next_dl_bwp_id to not trigger BWP switching, UE should be already on active_bwp
+          sched_ctrl->next_dl_bwp_id = sched_ctrl->active_bwp->bwp_Id;
+          // Update next_ul_bwp_id to not trigger BWP switching, UE should be already on active_ubwp
+          sched_ctrl->next_ul_bwp_id = sched_ctrl->active_ubwp->bwp_Id;
+        } else {
+          sched_ctrl->active_bwp = NULL;
+          sched_ctrl->active_ubwp = NULL;
+
+          // Update next_dl_bwp_id to not trigger BWP switching, UE should be already on Initial BWP
+          sched_ctrl->next_dl_bwp_id = 0;
+          // Update next_ul_bwp_id to not trigger BWP switching, UE should be already on Initial BWP
+          sched_ctrl->next_ul_bwp_id = 0;
         }
 
         // Update coreset/searchspace

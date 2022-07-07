@@ -993,7 +993,7 @@ static void add_drb_am(int is_gnb,
       nr_pdcp_ue_t *reestablish_ue = nr_pdcp_manager_get_ue(nr_pdcp_ue_manager, reestablish_rnti);
       if (reestablish_ue != NULL) {
         pdcp_drb->tx_next = reestablish_ue->drb[drb_id-1]->tx_next;
-        LOG_I(PDCP, "Applying tx_next %d in DRB %d from old RNTI 0x%04x to new RNTI 0x%04x\n", reestablish_ue->drb[drb_id-1]->tx_next, drb_id, reestablish_rnti, rnti);
+        LOG_I(PDCP, "Applying tx_next %d in DRB %d from old RNTI %04x to new RNTI %04x\n", reestablish_ue->drb[drb_id-1]->tx_next, drb_id, reestablish_rnti, rnti);
       }
     }
 

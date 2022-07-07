@@ -1658,7 +1658,7 @@ void nr_generate_Msg4(module_id_t module_idP, int CC_id, frame_t frameP, sub_fra
         // Checking Msg4 data (RRCSetup/RRCResume/RRCReestablishment)
         uint16_t mac_sdu_length = mac_rrc_nr_data_req(module_idP, CC_id, frameP, CCCH, ra->rnti, 1, buffer);
         if (mac_sdu_length == 0) {
-          LOG_I(NR_MAC,"No Msg4, check DCCH message for RRCReestablishment 0x%x\n",ra->rnti);
+          LOG_I(NR_MAC,"No Msg4, check DCCH message for RRCReestablishment %04x\n",ra->rnti);
           sched_ctrl->rlc_status[DL_SCH_LCID_DCCH] = mac_rlc_status_ind(module_idP,
                                                                         ra->rnti,
                                                                         module_idP,

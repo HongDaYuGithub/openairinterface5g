@@ -1492,14 +1492,14 @@ rrc_gNB_process_RRCReconfigurationComplete(
   /* Refresh SRBs/DRBs */
 
 #ifndef ITTI_SIM
-  LOG_D(NR_RRC,"Configuring PDCP DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
+  LOG_D(NR_RRC,"Configuring PDCP DRBs/SRBs for UE %04x\n",ue_context_pP->ue_context.rnti);
 
   rnti_t reestablish_rnti = 0;
   if (DRB_configList && DRB_configList->list.array[0]->reestablishPDCP && *DRB_configList->list.array[0]->reestablishPDCP == NR_DRB_ToAddMod__reestablishPDCP_true) {
     for (int i = 0; i < MAX_MOBILES_PER_ENB; i++) {
       if (reestablish_rnti_map[i][0] == ctxt_pP->rnti) {
         reestablish_rnti = reestablish_rnti_map[i][1];
-        LOG_D(NR_RRC, "reestablish_rnti_map[%d] new 0x%04x, old 0x%04x\n", i, reestablish_rnti_map[i][0], reestablish_rnti_map[i][1]);
+        LOG_D(NR_RRC, "reestablish_rnti_map[%d] new %04x, old %04x\n", i, reestablish_rnti_map[i][0], reestablish_rnti_map[i][1]);
 
         // clear current C-RNTI from map
         reestablish_rnti_map[i][0] = 0;
@@ -1525,7 +1525,7 @@ rrc_gNB_process_RRCReconfigurationComplete(
 
   /* Refresh SRBs/DRBs */
   if (!NODE_IS_CU(RC.nrrrc[ctxt_pP->module_id]->node_type)) {
-    LOG_D(NR_RRC,"Configuring RLC DRBs/SRBs for UE %x\n",ue_context_pP->ue_context.rnti);
+    LOG_D(NR_RRC,"Configuring RLC DRBs/SRBs for UE %04x\n",ue_context_pP->ue_context.rnti);
     nr_rrc_rlc_config_asn1_req(ctxt_pP,
                                SRB_configList, // NULL,
                                DRB_configList,
@@ -1544,12 +1544,12 @@ rrc_gNB_process_RRCReconfigurationComplete(
       } else if (SRB_configList->list.array[i]->srb_Identity == 2) {
         ue_context_pP->ue_context.Srb2.Active = 1;
         ue_context_pP->ue_context.Srb2.Srb_info.Srb_id = 2;
-        LOG_I(NR_RRC,"[gNB %d] Frame      %d CC %d : SRB2 is now active\n",
+        LOG_I(NR_RRC,"[gNB %d] Frame %d CC %d: SRB2 is now active\n",
               ctxt_pP->module_id,
               ctxt_pP->frame,
               ue_context_pP->ue_context.primaryCC_id);
       } else {
-        LOG_W(NR_RRC,"[gNB %d] Frame      %d CC %d : invalide SRB identity %ld\n",
+        LOG_W(NR_RRC,"[gNB %d] Frame %d CC %d: invalide SRB identity %ld\n",
               ctxt_pP->module_id,
               ctxt_pP->frame,
               ue_context_pP->ue_context.primaryCC_id,
@@ -1975,7 +1975,7 @@ rrc_gNB_process_RRCReestablishmentComplete(
 
   if (AMF_MODE_ENABLED) {
     nr_rrc_pdcp_config_security(ctxt_pP, ue_context_pP, 1);
-    LOG_D(NR_RRC, "set security successfully \n");
+    LOG_D(NR_RRC, "set security successfully\n");
   }
 
   uint8_t drb_id_to_setup_start = DRB_configList ? DRB_configList->list.array[0]->drb_Identity : 1;
@@ -2039,10 +2039,10 @@ rrc_gNB_process_RRCReestablishmentComplete(
     return;
   } else {
     LOG_I(NR_RRC,
-          "[gNB %d] Frame %d, Logical Channel DL-DCCH, Generate NR_RRCReconfiguration (bytes %d, UE %04x)\n",
+          "[gNB %d] Frame %d, Logical Channel DL-DCCH, Generate NR_RRCReconfiguration (bytes %d, UE id %04x)\n",
           ctxt_pP->module_id, ctxt_pP->frame, size, ue_context_pP->ue_context.rnti);
     LOG_D(NR_RRC,
-          "[FRAME %05d][RRC_gNB][MOD %u][][--- PDCP_DATA_REQ/%d Bytes (NR_RRCReconfiguration to UE %04x MUI %d) --->][PDCP][MOD %u][RB %u]\n",
+          "[FRAME %05d][RRC_gNB][MOD %u][][--- PDCP_DATA_REQ/%d Bytes (RRCReconfiguration to UE %04x MUI %d) --->][PDCP][MOD %u][RB %u]\n",
           ctxt_pP->frame, ctxt_pP->module_id, size, ue_context_pP->ue_context.rnti, rrc_gNB_mui, ctxt_pP->module_id, DCCH);
 #ifdef ITTI_SIM
   MessageDef *message_p;
@@ -2684,7 +2684,7 @@ rrc_gNB_decode_dcch(
             //NGAP_PDUSESSION_RELEASE_RESPONSE
             rrc_gNB_send_NGAP_PDUSESSION_RELEASE_RESPONSE(ctxt_pP, ue_context_p, xid);
           } else if (ue_context_p->ue_context.established_pdu_sessions_flag != 1) {
-            if(ue_context_p->ue_context.reestablishment_xid < 0) {
+            if (ue_context_p->ue_context.reestablishment_xid < 0) {
               if (ue_context_p->ue_context.nb_of_pdusessions > 0) {
                 rrc_gNB_send_NGAP_PDUSESSION_SETUP_RESP(ctxt_pP,
                                                         ue_context_p,
@@ -3049,7 +3049,7 @@ rrc_gNB_decode_dcch(
                     ue_context_p = rrc_gNB_get_ue_context(
                                      RC.nrrrc[ctxt_pP->module_id],
                                      reestablish_rnti);
-                    LOG_D(NR_RRC, "reestablish_rnti_map[%d] [0] %x, [1] %x\n",
+                    LOG_D(NR_RRC, "reestablish_rnti_map[%d] [0] %04x, [1] %04x\n",
                           i, reestablish_rnti_map[i][0], reestablish_rnti_map[i][1]);
                     break;
                   }
@@ -3057,7 +3057,7 @@ rrc_gNB_decode_dcch(
 
                 if (!ue_context_p) {
                   LOG_E(NR_RRC,
-                        PROTOCOL_NR_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE context, falt\n",
+                        PROTOCOL_NR_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE context, fault\n",
                         PROTOCOL_NR_RRC_CTXT_UE_ARGS(ctxt_pP));
                   break;
                 }
@@ -3069,7 +3069,7 @@ rrc_gNB_decode_dcch(
 
                 if(UE_id == -1) {
                   LOG_E(NR_RRC,
-                        PROTOCOL_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE_id(MAC) rnti %x, fault\n",
+                        PROTOCOL_RRC_CTXT_UE_FMT" NR_RRCReestablishmentComplete without UE_id(MAC) rnti %04x, fault\n",
                         PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),ctxt_pP->rnti);
                   break;
                 }
@@ -4693,7 +4693,7 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
       pfoffset = 15;
       break;
     default:
-      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  pfoffset error (pfoffset %d) \n",
+      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  pfoffset error (pfoffset %d)\n",
             instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.nAndPagingFrameOffset.present);
       return (-1);
 
@@ -4716,7 +4716,7 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
       Ns = 1;
       break;
     default:
-      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg:  ns error (ns %ld) \n",
+      LOG_E(RRC, "[gNB %ld] In rrc_gNB_generate_pcch_msg: ns error (ns %ld)\n",
             instance, sib1->servingCellConfigCommon->downlinkConfigCommon.pcch_Config.ns);
       return (-1);
   }
@@ -4754,7 +4754,6 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
         LOG_D(NR_RRC,"[gNB %ld] CC_id %d In rrc_gNB_generate_pcch_msg: Insert a new UE %d, T %d, N %d, PF %d, i_s %d, PF_offset %d\n", instance, CC_id, UE_PF_PO[CC_id][i].ue_index_value,
               T, N, UE_PF_PO[CC_id][i].PF_min, UE_PF_PO[CC_id][i].i_s, UE_PF_PO[CC_id][i].PF_offset);
       }
-
       break;
     }
   }
@@ -4766,8 +4765,8 @@ int rrc_gNB_generate_pcch_msg(uint32_t tmsi, uint8_t paging_drx, instance_t inst
                          buffer,
                          tmsi);
 
-  if(length == -1) {
-    LOG_I(NR_RRC, "do_Paging error");
+  if (length == -1) {
+    LOG_I(NR_RRC, "do_Paging error\n");
     return -1;
   }
   // TODO, send message to pdcp

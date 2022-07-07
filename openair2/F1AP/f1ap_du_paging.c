@@ -56,7 +56,7 @@ int DU_handle_Paging(instance_t       instance,
   F1AP_FIND_PROTOCOLIE_BY_ID(F1AP_PagingIEs_t, ie, paging,
                              F1AP_ProtocolIE_ID_id_UEIdentityIndexValue, true);
 
-  LOG_D(F1AP, "indexLength10 %d \n", BIT_STRING_to_uint32(&ie->value.choice.UEIdentityIndexValue.choice.indexLength10));
+  LOG_D(F1AP, "indexLength10 %d\n", BIT_STRING_to_uint32(&ie->value.choice.UEIdentityIndexValue.choice.indexLength10));
 
   // get PagingIdentity
   F1AP_FIND_PROTOCOLIE_BY_ID(F1AP_PagingIEs_t, ie, paging,
@@ -72,7 +72,7 @@ int DU_handle_Paging(instance_t       instance,
            (fiveg_tmsi_buf[4] << 8) +
            fiveg_tmsi_buf[5];
 
-    LOG_D(F1AP, "tmsi %ld \n", tmsi);
+    LOG_D(F1AP, "tmsi %ld\n", tmsi);
   }
 
   // get PagingDRX
@@ -83,7 +83,7 @@ int DU_handle_Paging(instance_t       instance,
     pagingdrx = (uint8_t)ie->value.choice.PagingDRX;
   }
 
-  LOG_D(F1AP, "pagingdrx %u \n", pagingdrx);
+  LOG_D(F1AP, "pagingdrx %u\n", pagingdrx);
 
   // get PagingCell_List
   F1AP_FIND_PROTOCOLIE_BY_ID(F1AP_PagingIEs_t, ie, paging,

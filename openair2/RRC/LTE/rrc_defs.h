@@ -931,7 +931,7 @@ typedef struct UE_RRC_INST_s {
 } UE_RRC_INST;
 
 typedef struct UE_PF_PO_s {
-  bool      enable_flag;  /* flag indicate whether current object is used */
+  bool enable_flag;  /* flag indicate whether current object is used */
   uint16_t ue_index_value;  /* UE index value */
   uint8_t PF_min;  /* minimal value of Paging Frame (PF) */
   uint8_t PO;  /* Paging Occasion (PO) */
