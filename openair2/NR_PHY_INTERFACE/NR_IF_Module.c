@@ -230,15 +230,8 @@ static void free_unqueued_nfapi_indications(nfapi_nr_rach_indication_t *rach_ind
   }
   if (uci_ind && uci_ind->num_ucis > 0)
   {
-    for (int i = 0; i < uci_ind->num_ucis; i++) {
-      switch (uci_ind->uci_list[i].pdu_type) {
-        case NFAPI_NR_UCI_FORMAT_0_1_PDU_TYPE:
-          break;
-
-        case NFAPI_NR_UCI_FORMAT_2_3_4_PDU_TYPE:
-          break;
-      }
-    }
+    /* PUCCH fields (HARQ, SR) are freed in handle_nr_uci_pucch_0_1() and
+     * handle_nr_uci_pucch_2_3_4() */
     free_and_zero(uci_ind->uci_list);
     free_and_zero(uci_ind);
   }
