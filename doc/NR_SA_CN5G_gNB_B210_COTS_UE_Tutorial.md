@@ -110,13 +110,15 @@ docker image tag oaisoftwarealliance/trf-gen-cn5g:latest trf-gen-cn5g:latest
 ```
 
 ## 2.3 OAI CN5G Configuration files
-Download and copy the configuration files to ~/oai-cn5g-fed/docker-compose:
+Download and copy docker-compose file to ~/oai-cn5g-fed/docker-compose
 - [docker-compose-basic-nrf.yaml](tutorial_resources/docker-compose-basic-nrf.yaml)
+
+Download and copy database file to ~/oai-cn5g-fed/docker-compose/database
 - [oai_db.sql](tutorial_resources/oai_db.sql)
 
 Change permissions on oai_db.sql to prevent mysql permission denied error:
 ```bash
-chmod 644 ~/oai-cn5g-fed/docker-compose/oai_db.sql
+chmod 644 ~/oai-cn5g-fed/docker-compose/database/oai_db.sql
 ```
 
 ## 2.4 SIM Card
@@ -177,7 +179,7 @@ cd cmake_targets
 
 ```bash
 cd ~/oai-cn5g-fed/docker-compose
-python3 core-network.py --type start-basic --fqdn yes --scenario 1
+python3 core-network.py --type start-basic --scenario 1
 ```
 
 ## 4.2 Run OAI gNB
